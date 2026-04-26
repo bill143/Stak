@@ -1,0 +1,189 @@
+// schema.prisma
+// Source of truth: docs/SPEC.md Section 4 (V1 Master Build Specification)
+// Owned by Agent A. Do not edit without coordinating with Bill.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  name            String?
+  avatarUrl       String?
+  emailVerified   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Subscription
+  stripeCustomerId      String?  @unique
+  stripeSubscriptionId  String?  @unique
+  subscriptionStatus    String?  // 'free' | 'active' | 'canceled' | 'past_due'
+  subscriptionTier      String   @default("free") // 'free' | 'pro'
+  subscriptionPeriodEnd DateTime?
+
+  // Usage tracking (for free tier limits)
+  aiImproveCount       Int      @default(0)
+  aiGenerateCount      Int      @default(0)
+  usageResetAt         DateTime @default(now())
+
+  // Settings
+  preferences          Json?    // { theme, layout, defaultAgent, etc. }
+
+  // Relations
+  groups               Group[]
+  prompts              Prompt[]
+  vaultProviders       VaultProvider[]
+  shareLinks           ShareLink[]
+  vaultMaster          VaultMaster?
+}
+
+model Group {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  icon        String   @default("📁")
+  color       String   @default("blue")
+  isCustom    Boolean  @default(true)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompts     Prompt[]
+
+  @@index([userId])
+}
+
+model Prompt {
+  id              String   @id @default(uuid())
+  userId          String
+  groupId         String
+  title           String
+  description     String?
+  whatItDoes      String?  @db.Text
+  howItWorks      Json?    // string[]
+  whyDC           String?  @db.Text
+  tags            String[] @default([])
+  bestFor         String[] @default([])
+  category        String   @default("other")
+  icon            String   @default("📄")
+  template        String   @db.Text
+  placeholders    Json?    // { key, label, sample }[]
+  primaryAgent    String   @default("claude-desktop")
+  variants        Json?    // PromptVariant[]
+  isSeed          Boolean  @default(false)
+  isCustom        Boolean  @default(true)
+  isAiGenerated   Boolean  @default(false)
+  isVerified      Boolean  @default(false)
+  position        Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group           Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  shareLinks      ShareLink[]
+
+  @@index([userId])
+  @@index([groupId])
+  @@index([userId, primaryAgent])
+}
+
+// PromptVariant is stored as JSON inside Prompt.variants
+// Schema:
+// {
+//   agent: string;
+//   template: string;
+//   placeholders: { key, label, sample }[];
+//   howItWorks?: string[];
+//   whyApplicable?: string;
+// }
+
+model VaultMaster {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  // Argon2id hash params used for KDF (so we can verify and re-derive)
+  saltBase64      String
+  iterations      Int      @default(3)
+  memorySize      Int      @default(65536)
+  parallelism     Int      @default(4)
+  // We store NOTHING that lets us recover the master password
+  hint            String?  // optional user-set hint
+  cloudSyncEnabled Boolean @default(false)
+  autoLockMinutes Int      @default(15)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VaultProvider {
+  id          String   @id @default(uuid())
+  userId      String
+  providerId  String   // 'anthropic' | 'openai' | 'openrouter' | etc.
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keys        VaultKey[]
+
+  @@unique([userId, providerId])
+  @@index([userId])
+}
+
+model VaultKey {
+  id              String   @id @default(uuid())
+  providerId      String   // foreign key to VaultProvider
+  // Ciphertext only — we cannot decrypt this
+  encryptedBlob   String   @db.Text  // base64-encoded ciphertext
+  ivBase64        String              // base64-encoded IV for AES-GCM
+  // Metadata that's safe to store unencrypted
+  displayName     String
+  isLocked        Boolean  @default(false)
+  notes           String?  @db.Text
+  projectTag      String?
+  lastTestedAt    DateTime?
+  lastUsedAt      DateTime?
+  testStatus      String?  // 'success' | 'failed' | 'untested'
+  rotateRemindAt  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  provider        VaultProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+}
+
+model ShareLink {
+  id          String   @id @default(uuid())
+  userId      String
+  promptId    String
+  token       String   @unique  // cryptographically random
+  views       Int      @default(0)
+  saves       Int      @default(0)
+  expiresAt   DateTime?
+  isRevoked   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt      Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model UsageEvent {
+  id          String   @id @default(uuid())
+  userId      String
+  eventType   String   // 'ai_improve' | 'ai_generate' | 'vault_copy' | 'share_view' | etc.
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, eventType, createdAt])
+}
