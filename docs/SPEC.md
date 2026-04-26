@@ -1,12 +1,16 @@
-\# Stak — Three-Agent Orchestration Plan
+\# Stak — V1 Master Build Specification
 
 
 
-\*\*Companion document to:\*\* `Stak V1 Master Build Specification`
+\*\*Version:\*\* 1.2
 
-\*\*Purpose:\*\* How to actually run three Claude Code agents in parallel without them stepping on each other.
+\*\*Status:\*\* Locked for build
 
-\*\*Audience:\*\* Bill (orchestrator) + the three Claude Code agents.
+\*\*Owner:\*\* Bill Asmar
+
+\*\*Last updated:\*\* April 25, 2026
+
+\*\*Codename:\*\* Stak (final brand name TBD — naming research in parallel during build week)
 
 \*\*GitHub:\*\* https://github.com/bill143/Stak
 
@@ -16,19 +20,19 @@
 
 
 
-\## How This Works
+\## 0. Document Purpose
 
 
 
-You'll open \*\*three separate Claude Code sessions\*\*, each in its own terminal/tab. Each session gets a focused mission and a strict ownership boundary. They share one git repo, but each owns its own file paths to avoid merge conflicts.
+This is the single source of truth for building Stak V1. It is designed to be handed directly to Claude Code (or split across multiple parallel Claude Code agents) as the executable specification. Every architectural decision, data model, page, feature, and edge case has been pre-resolved so the implementation team can focus on building, not deciding.
 
 
 
-You (Bill) act as the orchestrator: kick off Day 1, review what each agent produces at the end of the day, integrate, then issue Day 2 prompts.
+When in doubt during implementation, \*\*this document wins\*\*. If something is ambiguous here, stop and resolve it before guessing.
 
 
 
-I (Claude in this conversation) am your co-orchestrator. After each agent reports back, paste their output here. I'll tell you what's working, what's broken, what to integrate, and what to push back on.
+\*\*A note on the name:\*\* "Stak" is the working codename for the build. The "AI prompt tool" naming space is heavily saturated in 2026 — Promptly, PromptForge, PromptVault, PromptDesk, Quill, Recall, and Keystone are all already in use by AI companies. Real branding research will run in parallel during the build week so we ship under a name that has a clean domain, no trademark conflicts, and isn't already an established AI product. Throughout this document, the product is referred to as "Stak" — replace globally before public launch.
 
 
 
@@ -36,139 +40,87 @@ I (Claude in this conversation) am your co-orchestrator. After each agent report
 
 
 
-\## Pre-Flight Checklist (Before Spawning Agents)
+\## 1. Product Overview
 
 
 
-Do these in this order. Total time: 30-45 min.
+\### 1.1 What Stak Is
 
 
 
-\### Step 1 — Provision external accounts
+Stak is a universal prompt library for AI power users. It lets developers, builders, and technical knowledge workers save, organize, and reuse their best prompts across every AI tool they use — Claude, ChatGPT, Cursor, Ollama, and more. It also includes an encrypted API key vault so users can manage their AI provider credentials in one trusted place.
 
 
 
-Open these in tabs and create accounts/projects:
+\### 1.2 Tagline
 
 
 
-1\. \*\*GitHub\*\* — repo already created at https://github.com/bill143/Stak (private)
+\*Your AI prompts, organized.\*
 
-2\. \*\*Vercel\*\* — sign in, link to GitHub
 
-3\. \*\*Supabase\*\* — new project named `stak`. Region: closest to you. Save these values somewhere secure:
 
-&#x20;  - Project URL (`NEXT\_PUBLIC\_SUPABASE\_URL`)
+\### 1.3 One-Liner Pitch
 
-&#x20;  - Anon key (`NEXT\_PUBLIC\_SUPABASE\_ANON\_KEY`)
 
-&#x20;  - Service role key (`SUPABASE\_SERVICE\_ROLE\_KEY`) ← never commit this
 
-&#x20;  - Database URL (`DATABASE\_URL`)
+Stak is the universal prompt library for AI power users — save, organize, and reuse your best prompts across Claude, ChatGPT, Cursor, Ollama, and any AI tool you work with.
 
-&#x20;  - Direct URL (`DIRECT\_URL`)
 
-4\. \*\*Stripe\*\* — sign in, switch to \*\*Test mode\*\*. Create:
 
-&#x20;  - Product: "Stak Pro"
+\### 1.4 Three-Sentence Positioning
 
-&#x20;  - Two prices on that product: $9/mo recurring, $84/yr recurring
 
-&#x20;  - Save the price IDs (`price\_xxxxx`)
 
-&#x20;  - Save your test secret key
+> For developers, builders, and AI power users who work across multiple AI tools daily, Stak is the universal prompt library that turns your scattered, copy-pasted prompts into a searchable, editable, AI-improvable knowledge base. Unlike a Notion doc or a folder of text files, Stak is purpose-built for prompts — with intelligent variants for each AI agent, an encrypted API key vault, and one-click handoff to wherever you're working. Stak is where your prompts live, so you stop reinventing them every time.
 
-&#x20;  - We'll wire up the webhook signing secret later (Day 5)
 
-5\. \*\*Resend\*\* — sign in, save the API key. Domain verification can wait.
 
-6\. \*\*PostHog\*\* — new project, save the project API key + host
+\### 1.5 Target User (Primary)
 
-7\. \*\*Sentry\*\* — new Next.js project, save the DSN
 
-8\. \*\*Anthropic\*\* — make sure you have an API key (you do)
 
-9\. \*\*OpenAI\*\* — sign in, create an API key. We need this for the ChatGPT variant translation feature.
+\*\*The Multi-Tool AI Builder\*\*
 
 
 
-\### Step 2 — Local environment
+\- Software developer or technical knowledge worker
 
+\- Uses 3+ AI tools daily (Claude Desktop, ChatGPT, Cursor, sometimes Ollama)
 
+\- Has a `prompts.txt` file, a Notion page of prompts, or a folder full of `.md` files
 
-```bash
+\- Has lost a prompt at least once and wished they hadn't
 
-\# In your dev folder
+\- Pays for at least one AI subscription
 
-cd \~/code     # or wherever you keep code projects
+\- Earns $80k+ (will pay for tools that save them time)
 
-git clone https://github.com/bill143/Stak.git stak
+\- Active on Twitter/X, follows AI builders, uses Cursor or Claude Code
 
-cd stak
 
-```
 
+\### 1.6 Brand \& Visual Identity
 
 
-Confirm Node 20+ is installed: `node -v`
 
+| Attribute | Decision |
 
+|---|---|
 
-\### Step 3 — Master env file
+| Personality | Confident, builder-first, fast, honest |
 
+| Aesthetic reference | Linear, Raycast, Vercel |
 
+| Primary mode | Dark-first (light mode V1.1) |
 
-Create a file at `\~/.stak-secrets.env` (NOT in the repo). This is your master env file the agents will reference. Don't put it in the repo. Format:
+| Accent color | Electric blue `#3B82F6` with purple gradient highlights |
 
+| UI typography | Inter |
 
+| Code/prompt typography | JetBrains Mono |
 
-```
-
-DATABASE\_URL=...
-
-DIRECT\_URL=...
-
-NEXT\_PUBLIC\_SUPABASE\_URL=...
-
-NEXT\_PUBLIC\_SUPABASE\_ANON\_KEY=...
-
-SUPABASE\_SERVICE\_ROLE\_KEY=...
-
-STRIPE\_SECRET\_KEY=...
-
-NEXT\_PUBLIC\_STRIPE\_PRICE\_MONTHLY=...
-
-NEXT\_PUBLIC\_STRIPE\_PRICE\_YEARLY=...
-
-ANTHROPIC\_API\_KEY=...
-
-OPENAI\_API\_KEY=...
-
-RESEND\_API\_KEY=...
-
-NEXT\_PUBLIC\_POSTHOG\_KEY=...
-
-NEXT\_PUBLIC\_POSTHOG\_HOST=https://us.i.posthog.com
-
-SENTRY\_DSN=...
-
-NEXT\_PUBLIC\_APP\_URL=http://localhost:3000
-
-NODE\_ENV=development
-
-```
-
-
-
-When agents need an env value, you'll paste only the specific values they need into their session, never the whole file.
-
-
-
-\### Step 4 — Spec accessible to all agents
-
-
-
-Save the full V1 spec (the artifact titled "PromptDesk V1 Master Build Specification") as `docs/SPEC.md` in your local repo. Each agent will read this as the source of truth.
+| Logo direction | Stylized prompt/cursor mark — clean, geometric, monogrammable |
 
 
 
@@ -176,101 +128,107 @@ Save the full V1 spec (the artifact titled "PromptDesk V1 Master Build Specifica
 
 
 
-\## Agent Ownership Map (Avoid Conflicts)
+\## 2. Business Model
 
 
 
-To prevent agents from clobbering each other's work, each agent owns specific paths.
+\### 2.1 Pricing
 
 
 
-| Path | Owner | Notes |
+| Tier | Price | Annual | Notes |
+
+|---|---|---|---|
+
+| Free | $0 | — | Honest tier, not a crippled trial |
+
+| Pro | $9/month | $84/year (22% off) | Annual creates upsell |
+
+
+
+| Product (in Stripe) | Price | Recurring |
 
 |---|---|---|
 
-| `prisma/` | \*\*Agent A\*\* | DB schema. Only A modifies. |
+| Stak Pro | $9.00 | Monthly |
 
-| `lib/supabase/` | \*\*Agent A\*\* | DB clients |
-
-| `lib/seed/` | \*\*Agent A\*\* | Seed prompts |
-
-| `app/api/prompts/` | \*\*Agent A\*\* | Prompts CRUD API |
-
-| `app/api/groups/` | \*\*Agent A\*\* | Groups CRUD API |
-
-| `app/api/share/` | \*\*Agent A\*\* | Share links API |
-
-| `app/api/stripe/` | \*\*Agent A\*\* | Stripe webhook |
-
-| `middleware.ts` | \*\*Agent A\*\* | Auth middleware |
-
-| `app/(auth)/` | \*\*Agent A\*\* | Signin/signup pages — auth flow |
-
-| `app/(marketing)/` | \*\*Agent B\*\* | Landing, pricing, security, etc. |
-
-| `app/(app)/library/` | \*\*Agent B\*\* | Library page + detail + edit |
-
-| `app/(app)/settings/` | \*\*Agent B\*\* | All 9 settings pages |
-
-| `components/ui/` | \*\*Agent B\*\* | shadcn primitives + design tokens |
-
-| `components/library/` | \*\*Agent B\*\* | Library-specific components |
-
-| `components/marketing/` | \*\*Agent B\*\* | Marketing-page components |
-
-| `components/settings/` | \*\*Agent B\*\* | Settings components |
-
-| `tailwind.config.ts` | \*\*Agent B\*\* | Theme tokens (other agents only read) |
-
-| `styles/globals.css` | \*\*Agent B\*\* | Global CSS |
-
-| `app/(app)/vault/` | \*\*Agent C\*\* | Vault UI |
-
-| `app/api/ai/` | \*\*Agent C\*\* | AI Improve / Generate / Translate |
-
-| `lib/crypto/` | \*\*Agent C\*\* | Encryption library |
-
-| `lib/ai/` | \*\*Agent C\*\* | AI provider abstractions + system prompts |
-
-| `lib/agents/` | \*\*Agent C\*\* | Agent profiles |
-
-| `components/vault/` | \*\*Agent C\*\* | Vault components |
+| Stak Pro | $84.00 | Yearly |
 
 
 
-\### Shared paths (read-only for agents — Bill manages directly)
+\### 2.2 Tier Feature Matrix
 
 
 
-\- `package.json` — Bill installs deps; agents tell Bill what they need
+| Feature | Free | Pro |
 
-\- `.env.local` — Bill creates from master env file
+|---|---|---|
 
-\- `.env.example` — Bill maintains
+| Prompts | 25 max | Unlimited |
 
-\- `next.config.js` — Bill maintains
+| Custom groups | 3 max | Unlimited |
 
-\- `tsconfig.json` — Bill maintains (created on Day 1 by Agent A and not touched after)
+| Layout modes | Detailed only | All 3 |
 
-\- `README.md` — Bill maintains
+| Search \& filters | ✓ | ✓ |
 
-\- `.gitignore` — Bill maintains
+| Edit prompts | ✓ | ✓ |
+
+| Copy / Share via email | ✓ | ✓ |
+
+| Multi-agent variants | 1 agent | All 8+ agents |
+
+| AI Improve Prompt | 5/month | Unlimited |
+
+| AI Generate Prompt | 5/month | Unlimited |
+
+| API Vault — keys stored | 5 max | Unlimited |
+
+| API Vault — cloud sync | — | ✓ (opt-in) |
+
+| Shareable links | — | ✓ |
+
+| Copy as .env builder | — | ✓ |
+
+| Themes | Default only | All 6 + custom accent |
+
+| Priority support | — | ✓ |
 
 
 
-\### Branch strategy
+\### 2.3 Why These Limits
 
 
 
-\- `main` — protected, requires PR
+\- 25 prompts is enough to feel "I have a system" but not enough to live in long-term
 
-\- `agent-a/day-N-{task}` — Agent A branches
+\- 5 AI calls/month is enough to fall in love with AI Improve, not enough to satisfy daily use
 
-\- `agent-b/day-N-{task}` — Agent B branches
+\- API Vault gating to 5 keys is the strongest converter — once you have 6 keys saved, you'll pay $9 to keep them
 
-\- `agent-c/day-N-{task}` — Agent C branches
 
-\- All PRs reviewed by Bill before merge to main
+
+\### 2.4 Payment Processor
+
+
+
+\*\*Stripe\*\* — Checkout for upgrade flow, Customer Portal for self-service, webhooks for subscription events.
+
+
+
+\### 2.5 Explicitly Out of V1 Business Model
+
+
+
+\- No team tier
+
+\- No usage-based pricing
+
+\- No lifetime deal
+
+\- No free trial of Pro (free tier IS the trial)
+
+\- No annual-only tier — both monthly and annual offered
 
 
 
@@ -278,341 +236,307 @@ To prevent agents from clobbering each other's work, each agent owns specific pa
 
 
 
-\## Day 1 Kickoff Prompts
+\## 3. Tech Stack
 
 
 
-These are the exact prompts to paste into each Claude Code session. Each agent gets the SPEC.md file in their workspace plus the focused day-prompt below.
-
-
-
-\### 🔵 Agent A — Backend \& Auth — Day 1
-
-
-
-Open Claude Code in `\~/code/stak-agent-a`. Paste this prompt:
+\### 3.1 Confirmed Stack
 
 
 
 ```
 
-You are Agent A on the Stak build. You own the backend, database, auth, and API routes.
+Framework:       Next.js 14 (App Router)
 
+Language:        TypeScript (strict mode)
 
+UI:              shadcn/ui + Tailwind CSS
 
-Your working directory is \~/code/stak-agent-a (a git worktree on branch agent-a/day-1-scaffold-and-auth). You are one of three concurrent agents on this build. Your branch is isolated from the other agents' work via git worktrees.
+Database:        Supabase Postgres
 
+ORM:             Prisma
 
+Auth:            Supabase Auth (email + Google OAuth)
 
-Read docs/SPEC.md from start to finish. This is the source of truth for everything.
+State (client):  Zustand
 
+State (server):  TanStack Query
 
+Payments:        Stripe (Checkout + Customer Portal + webhooks)
 
-Your Day 1 mission:
+Encryption:      Web Crypto API + argon2-browser (WASM)
 
-1\. Initialize Next.js 14 with App Router, TypeScript (strict), Tailwind, shadcn/ui
+AI:              Anthropic SDK (primary), OpenAI SDK (variants)
 
-&#x20;  - Use: npx create-next-app@latest . --typescript --tailwind --app --no-src-dir
+Email:           Resend
 
-2\. Install core dependencies:
+Analytics:       PostHog
 
-&#x20;  @supabase/supabase-js, @supabase/ssr, prisma, @prisma/client,
+Error tracking:  Sentry
 
-&#x20;  zod, react-hook-form, @hookform/resolvers, lucide-react,
+Deployment:      Vercel
 
-&#x20;  @tanstack/react-query, zustand
+File storage:    Supabase Storage (deferred to V1.1)
 
-3\. Set up Prisma:
+Monitoring:      Vercel Analytics + Sentry
 
-&#x20;  - Create prisma/schema.prisma using the EXACT schema from Section 4 of SPEC.md
-
-&#x20;  - Configure for Supabase Postgres (DATABASE\_URL + DIRECT\_URL)
-
-&#x20;  - Run npx prisma generate
-
-&#x20;  - Do NOT run migrations yet — wait for Bill to provision Supabase access
-
-4\. Create lib/supabase/client.ts and lib/supabase/server.ts following the @supabase/ssr docs
-
-5\. Create middleware.ts that protects /(app)/\* routes — redirects unauthenticated to /signin?redirect=...
-
-6\. Create the /(auth) route group with placeholder pages: signin, signup, forgot-password, verify-email
-
-&#x20;  - Use shadcn Form + Input + Button components
-
-&#x20;  - Wire up Supabase Auth for email/password + Google OAuth
-
-&#x20;  - Pages should work end-to-end (signup → verification email → signin)
-
-7\. Create a basic /(app)/library/page.tsx that just says "Library — authenticated" so we can verify auth works
-
-8\. Create .env.example with all the env vars listed in Section 20.2 of SPEC.md (with empty values)
-
-
-
-Constraints:
-
-\- DO NOT touch app/(marketing)/ — that's Agent B
-
-\- DO NOT touch app/(app)/library/ beyond a single placeholder page — that's Agent B
-
-\- DO NOT touch lib/crypto/ or lib/ai/ — that's Agent C
-
-\- DO NOT install dependencies that are listed for Agent C's work (argon2-browser, @anthropic-ai/sdk, openai)
-
-\- DO NOT install dependencies that are Agent B's responsibility (just the shadcn components Agent B picks)
-
-\- USE Stak as the brand name throughout (codename — final brand pending)
-
-
-
-When done:
-
-\- Commit on branch agent-a/day-1-scaffold-and-auth
-
-\- Push to origin
-
-\- Report back to Bill with: (a) what was built, (b) what was tested, (c) any blockers, (d) exact dependencies installed
-
-
-
-Begin.
+Testing:         Vitest (unit), Playwright (E2E)
 
 ```
 
 
 
-\### 🟢 Agent B — Frontend Core — Day 1
+\### 3.2 Key Dependencies
 
 
 
-Open a SECOND Claude Code session in `\~/code/stak-agent-b`. Paste this prompt:
+```json
 
+{
 
+&#x20; "next": "14.x",
 
-```
+&#x20; "react": "18.x",
 
-You are Agent B on the Stak build. You own the marketing site, design system, library UI, and settings UI.
+&#x20; "typescript": "5.x",
 
+&#x20; "@supabase/supabase-js": "latest",
 
+&#x20; "@supabase/ssr": "latest",
 
-Your working directory is \~/code/stak-agent-b (a git worktree on branch agent-b/day-1-marketing-and-design-system). You are one of three concurrent agents on this build. Your branch is isolated from the other agents' work via git worktrees.
+&#x20; "prisma": "latest",
 
+&#x20; "@prisma/client": "latest",
 
+&#x20; "zustand": "latest",
 
-Read docs/SPEC.md from start to finish. This is the source of truth for everything.
+&#x20; "@tanstack/react-query": "latest",
 
+&#x20; "stripe": "latest",
 
+&#x20; "@anthropic-ai/sdk": "latest",
 
-IMPORTANT COORDINATION:
+&#x20; "openai": "latest",
 
-\- Agent A is working on auth, backend, and the repo scaffold IN PARALLEL with you
+&#x20; "argon2-browser": "latest",
 
-\- WAIT for Agent A's Day 1 PR to be merged into main before you start work that depends on the Next.js scaffold
+&#x20; "resend": "latest",
 
-\- After Agent A's PR merges, you'll need to update your worktree:
+&#x20; "posthog-js": "latest",
 
-&#x20;   git checkout main
+&#x20; "@sentry/nextjs": "latest",
 
-&#x20;   git pull origin main
+&#x20; "tailwindcss": "latest",
 
-&#x20;   git checkout agent-b/day-1-marketing-and-design-system
+&#x20; "lucide-react": "latest",
 
-&#x20;   git merge main
+&#x20; "zod": "latest",
 
-\- While waiting, you may design the components in isolation OR work on a parallel branch agent-b/day-1-design-tokens that ONLY touches Tailwind config and globals.css
+&#x20; "react-hook-form": "latest",
 
-\- Confirm with Bill before pushing anything that touches files outside your ownership
+&#x20; "@hookform/resolvers": "latest",
 
+&#x20; "vitest": "latest",
 
+&#x20; "@playwright/test": "latest"
 
-Your Day 1 mission (after Agent A's scaffold is merged):
-
-1\. Install shadcn/ui CLI and initialize: npx shadcn-ui@latest init
-
-&#x20;  Use: TypeScript, default style, slate base color, CSS variables yes
-
-2\. Install these shadcn components:
-
-&#x20;  button, input, label, card, dialog, dropdown-menu, select, switch, separator,
-
-&#x20;  tabs, sheet, toast, badge, skeleton, avatar
-
-3\. Define design tokens in tailwind.config.ts:
-
-&#x20;  - Primary: electric blue (#3B82F6)
-
-&#x20;  - 6 themes (Midnight, Slate, Obsidian, Royal, Forest, Sunset) as CSS variable sets
-
-&#x20;  - Font families: Inter (UI), JetBrains Mono (code)
-
-&#x20;  - Custom spacing scale matching the dark-aesthetic
-
-4\. Build the marketing landing page at app/(marketing)/page.tsx following Section 6.2 of SPEC.md exactly:
-
-&#x20;  - Nav with Logo, Use Cases dropdown, Pricing, Resources, Sign in, Get started
-
-&#x20;  - Hero with headline "Your AI prompts, organized." + animated screenshot mockup
-
-&#x20;  - Three-pillar feature section
-
-&#x20;  - Three feature deep-dives (Multi-agent / AI Improve / API Vault)
-
-&#x20;  - Pricing teaser
-
-&#x20;  - Testimonial slot (placeholder cards)
-
-&#x20;  - Final CTA
-
-&#x20;  - Footer with Product/Resources/Legal columns
-
-5\. Build the marketing layout at app/(marketing)/layout.tsx with the nav and footer
-
-
-
-Constraints:
-
-\- DO NOT touch app/(auth)/ — that's Agent A
-
-\- DO NOT touch app/api/ — that's Agent A or C
-
-\- DO NOT touch lib/crypto/, lib/ai/, lib/agents/ — that's Agent C
-
-\- DO NOT modify prisma/schema.prisma — that's Agent A
-
-\- USE Stak as the brand name throughout (codename — final brand pending)
-
-
-
-When done:
-
-\- Commit on branch agent-b/day-1-marketing-and-design-system
-
-\- Push to origin
-
-\- Open a PR with screenshots of the landing page (mobile + desktop)
-
-\- Report back to Bill with: (a) what was built, (b) what was tested, (c) any blockers, (d) exact dependencies installed
-
-
-
-Begin.
+}
 
 ```
 
 
 
-\### 🟣 Agent C — Vault \& AI — Day 1
-
-
-
-Open a THIRD Claude Code session in `\~/code/stak-agent-c`. Paste this prompt:
+\### 3.3 Folder Structure
 
 
 
 ```
 
-You are Agent C on the Stak build. You own the encrypted vault, AI features, and agent profiles.
+/stak
 
+├── app/
 
+│   ├── (marketing)/
 
-Your working directory is \~/code/stak-agent-c (a git worktree on branch agent-c/day-1-crypto-and-agents). You are one of three concurrent agents on this build. Your branch is isolated from the other agents' work via git worktrees.
+│   │   ├── page.tsx                  ← landing
 
+│   │   ├── pricing/page.tsx
 
+│   │   ├── resources/page.tsx
 
-Read docs/SPEC.md from start to finish. This is the source of truth for everything.
+│   │   ├── security/page.tsx
 
+│   │   ├── terms/page.tsx
 
+│   │   ├── privacy/page.tsx
 
-IMPORTANT COORDINATION:
+│   │   └── layout.tsx
 
-\- Agent A is working on the repo scaffold in parallel
+│   ├── (auth)/
 
-\- You can start work IMMEDIATELY on the encryption library — it has no dependency on other agents' work
+│   │   ├── signin/page.tsx
 
-\- After Agent A's scaffold lands in main, sync your worktree:
+│   │   ├── signup/page.tsx
 
-&#x20;   git checkout main
+│   │   ├── forgot-password/page.tsx
 
-&#x20;   git pull origin main
+│   │   ├── verify-email/page.tsx
 
-&#x20;   git checkout agent-c/day-1-crypto-and-agents
+│   │   └── layout.tsx
 
-&#x20;   git merge main
+│   ├── (app)/
 
+│   │   ├── library/
 
+│   │   │   ├── page.tsx
 
-Your Day 1 mission:
+│   │   │   ├── \[promptId]/page.tsx
 
-1\. Build lib/crypto/vault.ts — the encrypted vault primitives. Per Section 8 of SPEC.md:
+│   │   │   └── components/
 
-&#x20;  - Function deriveKey(masterPassword: string, saltBase64: string): Promise<CryptoKey>
+│   │   ├── vault/
 
-&#x20;    uses Argon2id via argon2-browser
+│   │   │   ├── page.tsx
 
-&#x20;    params: iterations=3, memorySize=65536, parallelism=4, hashLength=32
+│   │   │   └── components/
 
-&#x20;  - Function generateSalt(): string (returns base64-encoded 16 bytes from crypto.getRandomValues)
+│   │   ├── settings/
 
-&#x20;  - Function encryptKey(plaintext: string, key: CryptoKey): Promise<{ ciphertext: string, ivBase64: string }>
+│   │   │   ├── page.tsx
 
-&#x20;    uses AES-256-GCM via Web Crypto API
+│   │   │   ├── account/page.tsx
 
-&#x20;  - Function decryptKey(ciphertext: string, ivBase64: string, key: CryptoKey): Promise<string>
+│   │   │   ├── appearance/page.tsx
 
-&#x20;  - Function generateCanary(key: CryptoKey): Promise<{ ciphertext: string, ivBase64: string }>
+│   │   │   ├── subscription/page.tsx
 
-&#x20;    encrypts a known plaintext "STAK\_VAULT\_CANARY\_v1" so we can verify the password later
+│   │   │   ├── data/page.tsx
 
-&#x20;  - Function verifyCanary(canary: { ciphertext, ivBase64 }, key: CryptoKey): Promise<boolean>
+│   │   │   ├── ai/page.tsx
 
-2\. Build lib/agents/profiles.ts — exact code from Section 12.1 of SPEC.md (all 8 agent profiles)
+│   │   │   ├── vault/page.tsx
 
-3\. Write unit tests using Vitest at tests/unit/crypto.test.ts:
+│   │   │   ├── notifications/page.tsx
 
-&#x20;  - encrypt → decrypt round trip
+│   │   │   └── privacy/page.tsx
 
-&#x20;  - canary verification (success case)
+│   │   └── layout.tsx
 
-&#x20;  - canary verification (wrong password — must fail)
+│   ├── share/\[token]/page.tsx        ← public shared prompts
 
-&#x20;  - different salts produce different keys
+│   ├── api/
 
-&#x20;  - same salt + same password = same key (deterministic)
+│   │   ├── ai/
 
-4\. Install dependencies: argon2-browser, @anthropic-ai/sdk, openai, vitest, @vitest/ui
+│   │   │   ├── generate/route.ts
 
-5\. Add a vitest.config.ts at the repo root
+│   │   │   ├── improve/route.ts
 
-6\. Add npm script "test:unit" in package.json running vitest
+│   │   │   └── translate-variant/route.ts
 
+│   │   ├── prompts/
 
+│   │   │   └── \[...].ts
 
-Constraints:
+│   │   ├── share/
 
-\- DO NOT touch app/(auth)/, app/(app)/library/, app/(marketing)/ — those are Agents A and B
+│   │   │   └── \[...].ts
 
-\- DO NOT modify prisma/schema.prisma — that's Agent A
+│   │   └── stripe/
 
-\- DO NOT touch middleware.ts — that's Agent A
+│   │       └── webhook/route.ts
 
-\- USE Stak as the brand name throughout (codename — final brand pending)
+│   └── layout.tsx
 
+├── components/
 
+│   ├── ui/                           ← shadcn primitives
 
-When done:
+│   ├── library/
 
-\- Commit on branch agent-c/day-1-crypto-and-agents
+│   ├── vault/
 
-\- Push to origin
+│   ├── marketing/
 
-\- Open a PR with the test results in the description
+│   ├── settings/
 
-\- Report back to Bill with: (a) what was built, (b) test results (must be 100% passing), (c) any blockers, (d) exact dependencies installed
+│   └── shared/
 
+├── lib/
 
+│   ├── crypto/
 
-Begin.
+│   │   ├── vault.ts                  ← AES-GCM + Argon2 wrapper
+
+│   │   └── tokens.ts
+
+│   ├── supabase/
+
+│   │   ├── client.ts                 ← browser client
+
+│   │   ├── server.ts                 ← server client
+
+│   │   └── middleware.ts
+
+│   ├── stripe/
+
+│   │   ├── client.ts
+
+│   │   └── webhooks.ts
+
+│   ├── ai/
+
+│   │   ├── anthropic.ts
+
+│   │   ├── openai.ts
+
+│   │   ├── providers.ts              ← unified interface
+
+│   │   └── prompts.ts                ← system prompts for AI features
+
+│   ├── agents/
+
+│   │   └── profiles.ts               ← agent metadata
+
+│   ├── seed/
+
+│   │   └── prompts.ts                ← 73 pre-seeded prompts
+
+│   ├── validation/
+
+│   │   └── schemas.ts                ← Zod schemas
+
+│   └── utils/
+
+├── prisma/
+
+│   ├── schema.prisma
+
+│   └── migrations/
+
+├── public/
+
+├── styles/
+
+│   └── globals.css
+
+├── tests/
+
+│   ├── unit/
+
+│   └── e2e/
+
+├── .env.example
+
+├── next.config.js
+
+├── tailwind.config.ts
+
+├── tsconfig.json
+
+├── package.json
+
+└── README.md
 
 ```
 
@@ -622,51 +546,403 @@ Begin.
 
 
 
-\## Daily Standup Loop
+\## 4. Data Model (Prisma Schema)
 
 
 
-After every Day-N is complete (or earlier if an agent gets blocked):
+```prisma
+
+// schema.prisma
 
 
 
-\### Step 1 — Each agent reports back
+generator client {
+
+&#x20; provider = "prisma-client-js"
+
+}
 
 
 
-You'll get three reports. Paste each into this conversation. I'll triage:
+datasource db {
 
-\- ✅ Working as expected → merge
+&#x20; provider = "postgresql"
 
-\- ⚠️ Issues → I'll tell you exactly what to push back on
+&#x20; url      = env("DATABASE\_URL")
 
-\- 🚨 Major blocker → I'll redirect that agent's day
+&#x20; directUrl = env("DIRECT\_URL")
 
-
-
-\### Step 2 — Bill merges PRs in order
+}
 
 
 
-Order matters. On Day 1:
+model User {
 
-1\. Agent A first (everyone else needs the scaffold)
+&#x20; id              String    @id @default(uuid())
 
-2\. Agent B second (needs A's scaffold)
+&#x20; email           String    @unique
 
-3\. Agent C in parallel (independent until later days)
+&#x20; name            String?
+
+&#x20; avatarUrl       String?
+
+&#x20; emailVerified   DateTime?
+
+&#x20; createdAt       DateTime  @default(now())
+
+&#x20; updatedAt       DateTime  @updatedAt
 
 
 
-For days 2+, the order depends on what changed. I'll tell you each day.
+&#x20; // Subscription
+
+&#x20; stripeCustomerId      String?  @unique
+
+&#x20; stripeSubscriptionId  String?  @unique
+
+&#x20; subscriptionStatus    String?  // 'free' | 'active' | 'canceled' | 'past\_due'
+
+&#x20; subscriptionTier      String   @default("free") // 'free' | 'pro'
+
+&#x20; subscriptionPeriodEnd DateTime?
 
 
 
-\### Step 3 — I generate Day N+1 prompts
+&#x20; // Usage tracking (for free tier limits)
+
+&#x20; aiImproveCount       Int      @default(0)
+
+&#x20; aiGenerateCount      Int      @default(0)
+
+&#x20; usageResetAt         DateTime @default(now())
 
 
 
-Once you confirm Day N is integrated and working, paste the merged status here. I'll generate the three Day N+1 prompts based on the day plan in Section 22.2 of SPEC.md, accounting for anything that slipped or anything new we learned.
+&#x20; // Settings
+
+&#x20; preferences          Json?    // { theme, layout, defaultAgent, etc. }
+
+
+
+&#x20; // Relations
+
+&#x20; groups               Group\[]
+
+&#x20; prompts              Prompt\[]
+
+&#x20; vaultProviders       VaultProvider\[]
+
+&#x20; shareLinks           ShareLink\[]
+
+&#x20; vaultMaster          VaultMaster?
+
+}
+
+
+
+model Group {
+
+&#x20; id          String   @id @default(uuid())
+
+&#x20; userId      String
+
+&#x20; name        String
+
+&#x20; icon        String   @default("📁")
+
+&#x20; color       String   @default("blue")
+
+&#x20; isCustom    Boolean  @default(true)
+
+&#x20; position    Int      @default(0)
+
+&#x20; createdAt   DateTime @default(now())
+
+&#x20; updatedAt   DateTime @updatedAt
+
+
+
+&#x20; user        User     @relation(fields: \[userId], references: \[id], onDelete: Cascade)
+
+&#x20; prompts     Prompt\[]
+
+
+
+&#x20; @@index(\[userId])
+
+}
+
+
+
+model Prompt {
+
+&#x20; id              String   @id @default(uuid())
+
+&#x20; userId          String
+
+&#x20; groupId         String
+
+&#x20; title           String
+
+&#x20; description     String?
+
+&#x20; whatItDoes      String?  @db.Text
+
+&#x20; howItWorks      Json?    // string\[]
+
+&#x20; whyDC           String?  @db.Text
+
+&#x20; tags            String\[] @default(\[])
+
+&#x20; bestFor         String\[] @default(\[])
+
+&#x20; category        String   @default("other")
+
+&#x20; icon            String   @default("📄")
+
+&#x20; template        String   @db.Text
+
+&#x20; placeholders    Json?    // { key, label, sample }\[]
+
+&#x20; primaryAgent    String   @default("claude-desktop")
+
+&#x20; variants        Json?    // PromptVariant\[]
+
+&#x20; isSeed          Boolean  @default(false)
+
+&#x20; isCustom        Boolean  @default(true)
+
+&#x20; isAiGenerated   Boolean  @default(false)
+
+&#x20; isVerified      Boolean  @default(false)
+
+&#x20; position        Int      @default(0)
+
+&#x20; createdAt       DateTime @default(now())
+
+&#x20; updatedAt       DateTime @updatedAt
+
+
+
+&#x20; user            User       @relation(fields: \[userId], references: \[id], onDelete: Cascade)
+
+&#x20; group           Group      @relation(fields: \[groupId], references: \[id], onDelete: Cascade)
+
+&#x20; shareLinks      ShareLink\[]
+
+
+
+&#x20; @@index(\[userId])
+
+&#x20; @@index(\[groupId])
+
+&#x20; @@index(\[userId, primaryAgent])
+
+}
+
+
+
+// PromptVariant is stored as JSON inside Prompt.variants
+
+// Schema:
+
+// {
+
+//   agent: string;
+
+//   template: string;
+
+//   placeholders: { key, label, sample }\[];
+
+//   howItWorks?: string\[];
+
+//   whyApplicable?: string;
+
+// }
+
+
+
+model VaultMaster {
+
+&#x20; id              String   @id @default(uuid())
+
+&#x20; userId          String   @unique
+
+&#x20; // Argon2id hash params used for KDF (so we can verify and re-derive)
+
+&#x20; saltBase64      String
+
+&#x20; iterations      Int      @default(3)
+
+&#x20; memorySize      Int      @default(65536)
+
+&#x20; parallelism     Int      @default(4)
+
+&#x20; // We store NOTHING that lets us recover the master password
+
+&#x20; hint            String?  // optional user-set hint
+
+&#x20; cloudSyncEnabled Boolean @default(false)
+
+&#x20; autoLockMinutes Int      @default(15)
+
+&#x20; createdAt       DateTime @default(now())
+
+&#x20; updatedAt       DateTime @updatedAt
+
+
+
+&#x20; user            User     @relation(fields: \[userId], references: \[id], onDelete: Cascade)
+
+}
+
+
+
+model VaultProvider {
+
+&#x20; id          String   @id @default(uuid())
+
+&#x20; userId      String
+
+&#x20; providerId  String   // 'anthropic' | 'openai' | 'openrouter' | etc.
+
+&#x20; position    Int      @default(0)
+
+&#x20; createdAt   DateTime @default(now())
+
+
+
+&#x20; user        User     @relation(fields: \[userId], references: \[id], onDelete: Cascade)
+
+&#x20; keys        VaultKey\[]
+
+
+
+&#x20; @@unique(\[userId, providerId])
+
+&#x20; @@index(\[userId])
+
+}
+
+
+
+model VaultKey {
+
+&#x20; id              String   @id @default(uuid())
+
+&#x20; providerId      String   // foreign key to VaultProvider
+
+&#x20; // Ciphertext only — we cannot decrypt this
+
+&#x20; encryptedBlob   String   @db.Text  // base64-encoded ciphertext
+
+&#x20; ivBase64        String              // base64-encoded IV for AES-GCM
+
+&#x20; // Metadata that's safe to store unencrypted
+
+&#x20; displayName     String
+
+&#x20; isLocked        Boolean  @default(false)
+
+&#x20; notes           String?  @db.Text
+
+&#x20; projectTag      String?
+
+&#x20; lastTestedAt    DateTime?
+
+&#x20; lastUsedAt      DateTime?
+
+&#x20; testStatus      String?  // 'success' | 'failed' | 'untested'
+
+&#x20; rotateRemindAt  DateTime?
+
+&#x20; createdAt       DateTime @default(now())
+
+&#x20; updatedAt       DateTime @updatedAt
+
+
+
+&#x20; provider        VaultProvider @relation(fields: \[providerId], references: \[id], onDelete: Cascade)
+
+
+
+&#x20; @@index(\[providerId])
+
+}
+
+
+
+model ShareLink {
+
+&#x20; id          String   @id @default(uuid())
+
+&#x20; userId      String
+
+&#x20; promptId    String
+
+&#x20; token       String   @unique  // cryptographically random
+
+&#x20; views       Int      @default(0)
+
+&#x20; saves       Int      @default(0)
+
+&#x20; expiresAt   DateTime?
+
+&#x20; isRevoked   Boolean  @default(false)
+
+&#x20; createdAt   DateTime @default(now())
+
+
+
+&#x20; user        User     @relation(fields: \[userId], references: \[id], onDelete: Cascade)
+
+&#x20; prompt      Prompt   @relation(fields: \[promptId], references: \[id], onDelete: Cascade)
+
+
+
+&#x20; @@index(\[token])
+
+&#x20; @@index(\[userId])
+
+}
+
+
+
+model UsageEvent {
+
+&#x20; id          String   @id @default(uuid())
+
+&#x20; userId      String
+
+&#x20; eventType   String   // 'ai\_improve' | 'ai\_generate' | 'vault\_copy' | 'share\_view' | etc.
+
+&#x20; metadata    Json?
+
+&#x20; createdAt   DateTime @default(now())
+
+
+
+&#x20; @@index(\[userId, eventType, createdAt])
+
+}
+
+```
+
+
+
+\### 4.1 Important Schema Notes
+
+
+
+\- \*\*No plaintext API keys are ever stored.\*\* `VaultKey.encryptedBlob` is ciphertext that the server cannot decrypt.
+
+\- \*\*`UsageEvent`\*\* is for product analytics + free tier rate limiting. It's append-only.
+
+\- \*\*`isSeed`\*\* marks prompts that came from the seed library. They cannot be deleted by the user, only edited (which creates an override).
+
+\- \*\*`primaryAgent`\*\* + \*\*`variants` (JSON)\*\* implements the hybrid multi-agent design. Variants are kept as JSON because they're always read together with the primary prompt.
+
+\- \*\*Cascade deletes\*\* are intentional everywhere — when a user deletes their account, everything goes.
 
 
 
@@ -674,11 +950,2059 @@ Once you confirm Day N is integrated and working, paste the merged status here. 
 
 
 
-\## Day-by-Day High-Level Plan
+\## 5. Authentication
 
 
 
-(Per Section 22.2 of SPEC.md, restated here for orchestration reference.)
+\### 5.1 Auth Flow
+
+
+
+Supabase Auth handles the heavy lifting. We support:
+
+
+
+\- \*\*Email + password signup\*\* with email verification required before app access
+
+\- \*\*Google OAuth\*\* for one-click signup
+
+\- \*\*Forgot password\*\* flow with email reset link
+
+\- \*\*Session via httpOnly cookies\*\* managed by `@supabase/ssr`
+
+
+
+\### 5.2 Page Routes
+
+
+
+| Route | Purpose |
+
+|---|---|
+
+| `/signin` | Email or Google sign-in |
+
+| `/signup` | Create new account |
+
+| `/forgot-password` | Request reset email |
+
+| `/reset-password?token=...` | Set new password |
+
+| `/verify-email?token=...` | Confirm email |
+
+
+
+\### 5.3 Middleware
+
+
+
+A single Next.js middleware (`middleware.ts`) protects `/(app)/\*` routes. Unauthenticated users are redirected to `/signin?redirect=...`. The redirect param sends them back to where they were headed after signin.
+
+
+
+\### 5.4 Onboarding (post-signup)
+
+
+
+After first signup, the user is taken to `/library` with a one-time onboarding overlay that:
+
+
+
+1\. Welcomes them by name
+
+2\. Shows the seeded prompts pre-loaded
+
+3\. Highlights the search bar, filters, and AI Generate button
+
+4\. Optionally offers to set up the Vault (skippable)
+
+
+
+The overlay can be dismissed and never reappears.
+
+
+
+\---
+
+
+
+\## 6. Marketing Site
+
+
+
+\### 6.1 Pages
+
+
+
+| Route | Purpose |
+
+|---|---|
+
+| `/` | Landing page |
+
+| `/pricing` | Pricing tiers + FAQ |
+
+| `/resources` | Links to guides, blog (placeholder), changelog |
+
+| `/security` | Vault threat model, encryption explanation |
+
+| `/terms` | ToS |
+
+| `/privacy` | Privacy Policy |
+
+
+
+\### 6.2 Landing Page Structure
+
+
+
+```
+
+1\. Nav: Logo | Use Cases | Pricing | Resources | \[Sign in] \[Get started]
+
+2\. Hero
+
+&#x20;  - Headline: "Your AI prompts, organized."
+
+&#x20;  - Subhead: "The universal prompt library for Claude, ChatGPT, Cursor, Ollama,
+
+&#x20;    and every AI tool you use."
+
+&#x20;  - Primary CTA: "Start free →"
+
+&#x20;  - Secondary CTA: "See how it works"
+
+&#x20;  - Visual: Animated app screenshot (the prompt detail page)
+
+
+
+3\. Social proof bar
+
+&#x20;  - "Built for users of: \[Claude logo] \[ChatGPT logo] \[Cursor logo] \[Ollama logo] \[+4 more]"
+
+
+
+4\. Three-pillar feature section
+
+&#x20;  - "Save once, use everywhere"
+
+&#x20;  - "Improve prompts with AI"
+
+&#x20;  - "Encrypted API key vault"
+
+
+
+5\. Feature deep-dives (alternating left/right)
+
+&#x20;  - Multi-agent variants ("One prompt. Every AI.")
+
+&#x20;  - AI Improve ("Make every prompt better with one click.")
+
+&#x20;  - API Vault ("All your AI keys, encrypted, in one place.")
+
+
+
+6\. Pricing teaser → "Start free, upgrade when you outgrow it" → CTA
+
+
+
+7\. Testimonial slot (placeholder until we have real ones)
+
+
+
+8\. Final CTA
+
+&#x20;  - "Stop reinventing your prompts."
+
+&#x20;  - "\[Get started free →]"
+
+
+
+9\. Footer
+
+&#x20;  - Product / Resources / Legal columns
+
+&#x20;  - Social icons
+
+```
+
+
+
+\### 6.3 Pricing Page
+
+
+
+Tier comparison cards (Free vs Pro, side-by-side), Monthly/Yearly toggle, "Choose how you power your AI" section, FAQ accordion (12-15 questions), Footer CTA.
+
+
+
+\### 6.4 Security Page
+
+
+
+This is a strategic marketing asset. Layout:
+
+
+
+```
+
+H1: "Your API keys, your control."
+
+
+
+Section 1: "Why we built the vault this way"
+
+Section 2: "How encryption works" (with a simple diagram)
+
+Section 3: "What we can't do" (we cannot decrypt your keys, etc.)
+
+Section 4: "What we promise"
+
+Section 5: FAQ
+
+```
+
+
+
+This builds trust with the security-conscious developer audience and is shareable on Twitter.
+
+
+
+\---
+
+
+
+\## 7. App: Prompt Library
+
+
+
+\### 7.1 Library Page (`/library`)
+
+
+
+Top of page (sticky):
+
+\- Header bar: page title + \[+ Add Group] \[+ Create Prompt] \[✨ AI Generate]
+
+\- Help banner (collapsible): "How to set this up in Claude" with 4-step instructions
+
+\- Search input
+
+\- Layout toggle: Detailed / Compact / List
+
+\- Group filter pills (All + each group with count)
+
+\- Agent filter dropdown (All / Claude Desktop / Claude Code / etc.)
+
+\- Stats line: "X prompts shown"
+
+
+
+Body: Grid of prompt cards based on layout mode. Empty state if no prompts match.
+
+
+
+\### 7.2 Three Layout Modes
+
+
+
+\*\*Detailed\*\* — Full card with title, category tag, description, prompt preview (truncated), Edit/Open buttons.
+
+
+
+\*\*Compact\*\* — Smaller card with icon, title, 1-line description, agent badge. Click opens detail.
+
+
+
+\*\*List\*\* — Single-line rows: icon, title, group, agent, edited/custom badge. Click opens detail.
+
+
+
+\### 7.3 Prompt Detail Page (`/library/\[promptId]`)
+
+
+
+Layout:
+
+
+
+```
+
+← Back to library
+
+
+
+\[Icon] Title
+
+\[Verified] \[Tag] \[Tag] \[edited] \[custom] \[AI]
+
+
+
+Agent tabs: \[Claude Desktop\*] \[Claude Code] \[ChatGPT] \[+ Add variant]
+
+
+
+== What this prompt does ==
+
+{whatItDoes}
+
+
+
+== How it works ==
+
+1\. {step}
+
+2\. {step}
+
+...
+
+
+
+(optional) Why Desktop Commander? \[callout]
+
+
+
+Best for: \[Role] \[Role] \[Role]
+
+
+
+== The Prompt ==                              \[📋 Copy text]
+
+\[scrollable prompt box with placeholder highlighting]
+
+
+
+\[Placeholder fields, inline]
+
+folder: \[\_\_\_\_\_\_\_\_\_\_\_\_]
+
+filename: \[\_\_\_\_\_\_\_\_\_\_\_\_]
+
+
+
+== Ready to run this prompt? ==
+
+\[⚡ Run in {agent} ←button]
+
+
+
+Footer:
+
+\[← Library] | \[✉ Share email] \[🔗 Share link] \[✏ Edit] \[↻ Reset] \[🗑 Delete]
+
+```
+
+
+
+\### 7.4 Edit Prompt Modal
+
+
+
+Full-screen overlay (or right-drawer on desktop). Editable fields:
+
+\- Title
+
+\- Group (dropdown)
+
+\- Category
+
+\- Short description
+
+\- What this prompt does
+
+\- How it works (textarea, one step per line)
+
+\- Why DC (optional)
+
+\- Tags (comma-separated)
+
+\- Best for (comma-separated)
+
+\- Primary agent (dropdown)
+
+\- Template (with `{key}` placeholders)
+
+\- Placeholders (key/label/sample, add/remove rows)
+
+\- \*\*✨ Improve with AI\*\* button (top-right, sends entire draft to Claude for full polish)
+
+
+
+Buttons: \[Cancel] \[Save]
+
+
+
+\### 7.5 Variants UX
+
+
+
+On the detail page, the agent tab strip shows:
+
+\- Primary agent (always present, marked with `\*`)
+
+\- Each existing variant as its own tab
+
+\- A `\[+ Add variant]` button that opens an agent picker
+
+
+
+Clicking `+ Add variant` lets the user:
+
+\- Pick an agent
+
+\- Choose: "Generate with AI" (uses Claude to translate the primary to the new agent's style) OR "Start blank"
+
+
+
+Variants are fully editable independently of the primary.
+
+
+
+\### 7.6 Search Behavior
+
+
+
+\- Searches across: title, description, whatItDoes, template, tags, bestFor
+
+\- Case-insensitive
+
+\- Debounced 200ms
+
+\- Client-side for the user's own prompts (fast, no roundtrip)
+
+
+
+\### 7.7 Filters
+
+
+
+\- \*\*Group:\*\* click pill or use dropdown on mobile
+
+\- \*\*Agent:\*\* dropdown next to layout toggle
+
+\- Filters combine (AND): "Group A AND Agent B"
+
+\- "Clear filters" link appears when any filter is active
+
+
+
+\### 7.8 Seed Prompts
+
+
+
+73 prompts pre-seeded into a new user's library across the 7 default groups. The seed data lives in `/lib/seed/prompts.ts` and is inserted via a Supabase trigger or onSignup hook.
+
+
+
+Marked with `isSeed: true`. Seed prompts can be edited (which creates an override) but not deleted from the canonical seed list — though the user can hide them via a "Hide" action that filters them out of view.
+
+
+
+\---
+
+
+
+\## 8. App: API Vault
+
+
+
+\### 8.1 First-Time Vault Setup
+
+
+
+When the user first opens `/vault`, they see a setup screen:
+
+
+
+```
+
+🔐 Set up your vault
+
+
+
+Your API keys are encrypted on your device. We can never read them.
+
+
+
+\[ ] I understand that if I forget my master password,
+
+&#x20;   my keys are unrecoverable.
+
+
+
+Master password: \[\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_]
+
+Confirm:         \[\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_]
+
+Hint (optional): \[\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_]
+
+
+
+\[Set up vault →]
+
+```
+
+
+
+Implementation:
+
+\- Generate a random 16-byte salt, store in `VaultMaster` row
+
+\- Master password is run through Argon2id with that salt → derives 32-byte AES key
+
+\- AES key is held only in memory during session (and IndexedDB if user opts into "remember for session")
+
+\- A canary value (a known plaintext encrypted with the derived key) is stored to verify the password on subsequent unlocks
+
+
+
+\### 8.2 Vault Lock/Unlock
+
+
+
+\- Vault locks automatically after `autoLockMinutes` of inactivity (default 15 min)
+
+\- Vault locks on browser close
+
+\- When locked, `/vault` shows an unlock screen — enter master password
+
+\- All other app pages remain functional when vault is locked
+
+
+
+\### 8.3 Vault Page Layout
+
+
+
+```
+
+🔐 API Vault                              \[Lock] \[Settings]
+
+
+
+Stats: 23 keys across 6 providers · 4 locked · 19 active
+
+
+
+Quick actions:
+
+\[🎯 Build .env for project] \[📋 Copy all unlocked] \[🔍 Search keys]
+
+
+
+Provider cards (one per provider):
+
+┌─────────────────────────────────────────────┐
+
+│ 🅰️  Anthropic              \[+ Add Key]      │
+
+│ ───────────────────────────────────────────  │
+
+│ 🔓 Production         sk-ant-...8k2j  ✓      │
+
+│ 🔒 Personal Dev       sk-ant-...4mxq  ✓      │
+
+│ 🔓 Testing            sk-ant-...9q2p  ✓      │
+
+│ ───────────────────────────────────────────  │
+
+│ \[Get a new key →] \[Test all] \[Copy .env]     │
+
+└─────────────────────────────────────────────┘
+
+```
+
+
+
+\### 8.4 Add Key Flow
+
+
+
+Click `+ Add Key`:
+
+
+
+```
+
+Add API Key
+
+
+
+Display name \*: \[\_\_\_\_\_\_\_\_\_\_\_\_\_]
+
+Key \*:          \[\_\_\_\_\_\_\_\_\_\_\_\_\_]  (paste — auto-detects provider)
+
+Provider:       \[auto-detected, override available]
+
+Lock this key:  \[ ]
+
+Project tag:    \[optional]
+
+Notes:          \[optional]
+
+
+
+\[Cancel] \[Test \& Save]
+
+```
+
+
+
+Auto-detection logic:
+
+
+
+```ts
+
+const PROVIDER\_PATTERNS = {
+
+&#x20; 'sk-ant-': 'anthropic',
+
+&#x20; 'sk-or-v1-': 'openrouter',
+
+&#x20; 'sk-': 'openai', // fallback after others
+
+&#x20; 'xi-': 'elevenlabs',
+
+&#x20; 'hf\_': 'huggingface',
+
+&#x20; 'gsk\_': 'groq',
+
+};
+
+```
+
+
+
+`Test \& Save` makes a live test call to the provider's lightest endpoint before saving.
+
+
+
+\### 8.5 Pre-Configured Providers
+
+
+
+| Provider | Key dashboard URL | Detection prefix | Test endpoint |
+
+|---|---|---|---|
+
+| Anthropic | console.anthropic.com/settings/keys | `sk-ant-` | POST /v1/messages (max 1 token) |
+
+| OpenAI | platform.openai.com/api-keys | `sk-` (general) | GET /v1/models |
+
+| OpenRouter | openrouter.ai/keys | `sk-or-v1-` | GET /api/v1/models |
+
+| ElevenLabs | elevenlabs.io/app/settings/api-keys | `xi-` | GET /v1/user |
+
+| ngrok | dashboard.ngrok.com/api | (varies) | GET /api/credentials |
+
+| Hugging Face | huggingface.co/settings/tokens | `hf\_` | GET /api/whoami-v2 |
+
+| Groq | console.groq.com/keys | `gsk\_` | GET /openai/v1/models |
+
+| Mistral | console.mistral.ai/api-keys | (varies) | GET /v1/models |
+
+| Cohere | dashboard.cohere.com/api-keys | (varies) | GET /v1/check-api-key |
+
+| Ollama | localhost auto-detect | n/a | GET http://localhost:11434/api/tags |
+
+| Custom | (user-defined) | (user-defined) | (user-defined) |
+
+
+
+\### 8.6 Lock Toggle
+
+
+
+\- Per-key lock toggle (icon + visual tint change)
+
+\- Locked keys require an extra confirmation dialog before any copy or .env export operation
+
+\- Bulk operations (Copy all unlocked) skip locked keys silently
+
+
+
+\### 8.7 Build .env for Project
+
+
+
+Multi-step modal:
+
+
+
+```
+
+Step 1: Pick providers
+
+\[ ] Anthropic
+
+\[ ] OpenAI
+
+\[ ] OpenRouter
+
+...
+
+\[Next →]
+
+
+
+Step 2: Pick keys per provider
+
+For Anthropic, use:
+
+&#x20; ( ) Production \[LOCKED]
+
+&#x20; ( ) Personal Dev
+
+&#x20; (•) Testing
+
+For OpenRouter, use:
+
+&#x20; ...
+
+\[Back] \[Next →]
+
+
+
+Step 3: Generated .env
+
+ANTHROPIC\_API\_KEY=sk-ant-...
+
+OPENROUTER\_API\_KEY=sk-or-v1-...
+
+ELEVENLABS\_API\_KEY=xi-...
+
+
+
+\[💾 Save as preset] \[📋 Copy] \[Done]
+
+```
+
+
+
+Presets are saved per-user as JSON in `User.preferences` and listed at the top of the Build .env modal next time.
+
+
+
+\### 8.8 Cloud Sync (Pro Only, Opt-In)
+
+
+
+When toggled on:
+
+\- The encrypted blob (and metadata) syncs to Supabase
+
+\- The server stores ciphertext only — we cannot decrypt
+
+\- If user logs in on a new device, they enter their master password to derive the same AES key, which decrypts the synced blobs
+
+
+
+Toggle in Settings → Vault → "Sync vault across devices".
+
+
+
+\### 8.9 What the Server Sees vs. Cannot See
+
+
+
+| Field | Server can see | Notes |
+
+|---|---|---|
+
+| User's email | ✓ | Standard |
+
+| Master password | ✗ | Never sent |
+
+| AES key | ✗ | Derived client-side only |
+
+| Plaintext API keys | ✗ | Encrypted before transit |
+
+| Key display name | ✓ | Metadata, unencrypted |
+
+| Provider | ✓ | Metadata |
+
+| Lock status | ✓ | Metadata |
+
+| Notes | ✓ | Metadata (encourage user not to put secrets here) |
+
+| Encrypted ciphertext | ✓ | But cannot decrypt |
+
+| Test status | ✓ | Just success/fail flag |
+
+| Last used timestamp | ✓ | Metadata |
+
+
+
+\---
+
+
+
+\## 9. App: AI Features
+
+
+
+\### 9.1 AI Improve Prompt
+
+
+
+Triggered from the Edit modal (`✨ Improve with AI` button).
+
+
+
+\*\*API route:\*\* `POST /api/ai/improve`
+
+
+
+\*\*Request body:\*\*
+
+```json
+
+{
+
+&#x20; "promptDraft": {
+
+&#x20;   "title": "...",
+
+&#x20;   "description": "...",
+
+&#x20;   "whatItDoes": "...",
+
+&#x20;   "howItWorks": \[...],
+
+&#x20;   "whyDC": "...",
+
+&#x20;   "tags": \[...],
+
+&#x20;   "bestFor": \[...],
+
+&#x20;   "category": "...",
+
+&#x20;   "groupId": "...",
+
+&#x20;   "primaryAgent": "...",
+
+&#x20;   "template": "...",
+
+&#x20;   "placeholders": \[...]
+
+&#x20; }
+
+}
+
+```
+
+
+
+\*\*Server logic:\*\*
+
+1\. Verify user is authenticated
+
+2\. Check usage limits (free: 5/month) — if exceeded, return 402 with upgrade CTA
+
+3\. Build the system prompt
+
+4\. Call Anthropic API (model: `claude-sonnet-4-5`)
+
+5\. Parse JSON response
+
+6\. Validate against Zod schema
+
+7\. Increment `User.aiImproveCount`
+
+8\. Return improved draft to client
+
+
+
+\*\*Response:\*\*
+
+```json
+
+{
+
+&#x20; "improved": { ...same shape as request },
+
+&#x20; "usage": { "remaining": 4, "limit": 5 }
+
+}
+
+```
+
+
+
+\### 9.2 AI Generate Prompt
+
+
+
+Triggered from the main library (`✨ AI Generate` button).
+
+
+
+\*\*API route:\*\* `POST /api/ai/generate`
+
+
+
+\*\*Request body:\*\*
+
+```json
+
+{
+
+&#x20; "userIdea": "free-text description from user",
+
+&#x20; "targetGroup": "auto" | "<groupId>",
+
+&#x20; "targetAgent": "auto" | "<agentId>"
+
+}
+
+```
+
+
+
+Same auth + usage check as Improve. System prompt instructs Claude to produce a complete prompt entry. Returns full draft for user to review before saving.
+
+
+
+\### 9.3 Translate Variant
+
+
+
+Triggered from the prompt detail page when user clicks `+ Add variant` and selects "Generate with AI".
+
+
+
+\*\*API route:\*\* `POST /api/ai/translate-variant`
+
+
+
+\*\*Request body:\*\*
+
+```json
+
+{
+
+&#x20; "promptId": "...",
+
+&#x20; "fromAgent": "claude-desktop",
+
+&#x20; "toAgent": "chatgpt"
+
+}
+
+```
+
+
+
+Loads the source prompt's primary or selected variant. Loads agent profiles for both source and target. Asks Claude to rewrite the template adapting to target agent capabilities. Preserves placeholder keys exactly. Returns new variant draft for user review.
+
+
+
+\### 9.4 Usage Limits \& Reset
+
+
+
+\- Free tier: 5 AI Improve + 5 AI Generate per \*\*calendar month\*\*
+
+\- Reset job: a daily Vercel cron at 00:00 UTC checks if `User.usageResetAt` is more than 30 days old; if so, resets counters to 0
+
+\- When user upgrades to Pro, counters become irrelevant (no limit applied)
+
+
+
+\### 9.5 System Prompts (lib/ai/prompts.ts)
+
+
+
+Three system prompts, each carefully crafted:
+
+
+
+\*\*`improvePromptSystemPrompt`\*\* — instructs Claude to improve all 11 fields, preserve intent, preserve placeholder keys, return JSON only.
+
+
+
+\*\*`generatePromptSystemPrompt`\*\* — instructs Claude to generate a complete prompt entry from a free-text description, pick the right group from a list, return JSON only.
+
+
+
+\*\*`translateVariantSystemPrompt`\*\* — instructs Claude to rewrite a prompt for a different agent, using agent profile capabilities to inform the adaptation.
+
+
+
+\### 9.6 Models Used
+
+
+
+| Feature | Model | Rationale |
+
+|---|---|---|
+
+| AI Improve | claude-sonnet-4-5 | Fast, high quality, lower cost |
+
+| AI Generate | claude-sonnet-4-5 | Same |
+
+| Translate variant | claude-sonnet-4-5 | Same |
+
+
+
+These can be made configurable in Settings → AI Behavior for Pro users.
+
+
+
+\---
+
+
+
+\## 10. Sharing
+
+
+
+\### 10.1 Share via Email
+
+
+
+Click `✉ Share email` on detail page → opens `mailto:` with prefilled:
+
+\- Subject: `Prompt: {title}`
+
+\- Body: title + description + full prompt text + signature with link to product
+
+
+
+\### 10.2 Shareable Links
+
+
+
+Click `🔗 Share link` → modal:
+
+
+
+```
+
+Share this prompt
+
+
+
+Anyone with this link can view the prompt.
+
+Filled-in placeholder values are NOT shared.
+
+
+
+\[ Generate link ]
+
+
+
+Once generated:
+
+https://<app-domain>/share/abc123def456...
+
+
+
+\[Copy link] \[Revoke] \[Expires: never ▼]
+
+```
+
+
+
+\*\*Backend:\*\*
+
+\- `POST /api/share` creates a `ShareLink` row with crypto-random 16-byte token
+
+\- `GET /share/\[token]` is a public Next.js page that fetches the prompt by token (no auth required)
+
+\- Visit count incremented on view
+
+\- "Save to my library" button on the public page → if logged in, copies the prompt; if not, redirects to signup with a query param to copy after signup
+
+
+
+\*\*Public share page:\*\*
+
+\- Read-only view of the prompt
+
+\- Shows: "Shared by @username · X views"
+
+\- "Save this prompt to your library →" CTA (signup if needed)
+
+\- "Get Stak free" footer
+
+
+
+\---
+
+
+
+\## 11. Settings (9 Categories)
+
+
+
+\### 11.1 Account
+
+\- Display name
+
+\- Email (read-only, change via verification)
+
+\- Change password
+
+\- Delete account (confirms, exports data first)
+
+
+
+\### 11.2 Appearance
+
+\- Theme picker: 6 presets (Midnight, Slate, Obsidian, Royal, Forest, Sunset)
+
+\- Custom accent color picker
+
+\- Card density: Compact / Normal / Spacious
+
+\- Font size: Small / Medium / Large
+
+\- Background gradient toggle
+
+
+
+\### 11.3 Subscription
+
+\- Current tier
+
+\- Stripe Customer Portal embed: upgrade, downgrade, update card, cancel
+
+\- Usage stats (AI calls used this month, prompts saved, etc.)
+
+
+
+\### 11.4 Data
+
+\- Export library (JSON download — all prompts, groups, vault metadata WITHOUT decrypted keys)
+
+\- Import library (paste/upload JSON)
+
+\- Clear placeholder values only (resets all filled-in fields)
+
+\- Reset to defaults (deletes custom prompts/groups, restores seed library) — confirmation required
+
+
+
+\### 11.5 AI Behavior
+
+\- Default model for AI features (Pro only)
+
+\- Temperature slider 0.0–1.0
+
+\- "Always preserve user-specific paths" toggle
+
+\- Custom system prompt addendum (Pro, advanced)
+
+
+
+\### 11.6 Vault
+
+\- Master password change (requires current)
+
+\- Auto-lock minutes: 1 / 15 / 60 / Never
+
+\- Lock on browser close: toggle
+
+\- Cloud sync: toggle (Pro only)
+
+\- Master password hint: edit
+
+\- Export vault (encrypted JSON backup)
+
+\- Reset vault (destroys all keys — confirmation required)
+
+
+
+\### 11.7 Notifications
+
+\- Email: product updates (toggle)
+
+\- Email: weekly summary (toggle)
+
+\- Email: usage alerts (toggle)
+
+\- Email: security alerts (always on, no toggle)
+
+
+
+\### 11.8 Privacy
+
+\- Storage usage indicator
+
+\- Analytics opt-out toggle (PostHog)
+
+\- Crash reporting opt-out toggle (Sentry)
+
+\- Clear all stored data (local browser data)
+
+\- Privacy policy link
+
+
+
+\### 11.9 About
+
+\- Version number
+
+\- Total prompts count
+
+\- Total groups count
+
+\- Total vault keys count
+
+\- Storage used (KB)
+
+\- Last backup timestamp
+
+\- Links: Documentation, Changelog, Support, GitHub (if public), Status page
+
+
+
+\---
+
+
+
+\## 12. Multi-Agent Configuration
+
+
+
+\### 12.1 Agent Profiles (lib/agents/profiles.ts)
+
+
+
+```ts
+
+export const AGENTS = {
+
+&#x20; 'claude-desktop': {
+
+&#x20;   id: 'claude-desktop',
+
+&#x20;   name: 'Claude Desktop',
+
+&#x20;   icon: '🖥️',
+
+&#x20;   capabilities: \['filesystem', 'terminal', 'mcp'],
+
+&#x20;   description: 'Anthropic\\'s desktop client with Desktop Commander MCP for file operations.',
+
+&#x20;   translationHint: 'Has direct filesystem access via Desktop Commander. Can read, write, delete files and run shell commands. Use specific file paths.',
+
+&#x20;   keyDashboardUrl: 'https://console.anthropic.com/settings/keys',
+
+&#x20;   requiresKey: true,
+
+&#x20;   keyProvider: 'anthropic',
+
+&#x20; },
+
+&#x20; 'claude-code': {
+
+&#x20;   id: 'claude-code',
+
+&#x20;   name: 'Claude Code',
+
+&#x20;   icon: '💻',
+
+&#x20;   capabilities: \['filesystem', 'terminal', 'git', 'autonomous-execution'],
+
+&#x20;   description: 'Anthropic\\'s agentic coding CLI for autonomous development.',
+
+&#x20;   translationHint: 'Operates autonomously in a code repository. Can edit files, run commands, commit changes. Best for multi-step development tasks.',
+
+&#x20;   keyDashboardUrl: 'https://console.anthropic.com/settings/keys',
+
+&#x20;   requiresKey: true,
+
+&#x20;   keyProvider: 'anthropic',
+
+&#x20; },
+
+&#x20; 'claude-web': {
+
+&#x20;   id: 'claude-web',
+
+&#x20;   name: 'Claude.ai',
+
+&#x20;   icon: '🌐',
+
+&#x20;   capabilities: \['web-search', 'artifacts', 'projects'],
+
+&#x20;   description: 'Anthropic\\'s web client. No filesystem access by default.',
+
+&#x20;   translationHint: 'No filesystem access. User pastes content into the chat. Best for analysis, writing, conversation.',
+
+&#x20;   keyDashboardUrl: null,
+
+&#x20;   requiresKey: false,
+
+&#x20; },
+
+&#x20; 'chatgpt': {
+
+&#x20;   id: 'chatgpt',
+
+&#x20;   name: 'ChatGPT',
+
+&#x20;   icon: '🤖',
+
+&#x20;   capabilities: \['web-browsing', 'code-interpreter', 'image-generation'],
+
+&#x20;   description: 'OpenAI\\'s ChatGPT. No filesystem access by default; Code Interpreter handles uploads.',
+
+&#x20;   translationHint: 'No persistent filesystem. Code Interpreter can run Python on uploaded files. Use natural language and provide context.',
+
+&#x20;   keyDashboardUrl: 'https://platform.openai.com/api-keys',
+
+&#x20;   requiresKey: true,
+
+&#x20;   keyProvider: 'openai',
+
+&#x20; },
+
+&#x20; 'cursor': {
+
+&#x20;   id: 'cursor',
+
+&#x20;   name: 'Cursor',
+
+&#x20;   icon: '✏️',
+
+&#x20;   capabilities: \['filesystem', 'codebase-context', 'inline-edit'],
+
+&#x20;   description: 'AI-first code editor.',
+
+&#x20;   translationHint: 'Built into the editor. Has full codebase context. Best for code-focused prompts and rules-style instructions.',
+
+&#x20;   keyDashboardUrl: null,
+
+&#x20;   requiresKey: false,
+
+&#x20; },
+
+&#x20; 'windsurf': {
+
+&#x20;   id: 'windsurf',
+
+&#x20;   name: 'Windsurf',
+
+&#x20;   icon: '🌊',
+
+&#x20;   capabilities: \['filesystem', 'codebase-context', 'agentic'],
+
+&#x20;   description: 'Codeium\\'s agentic AI IDE.',
+
+&#x20;   translationHint: 'Similar to Cursor. Agentic flows. Codebase-aware.',
+
+&#x20;   keyDashboardUrl: null,
+
+&#x20;   requiresKey: false,
+
+&#x20; },
+
+&#x20; 'ollama': {
+
+&#x20;   id: 'ollama',
+
+&#x20;   name: 'Ollama',
+
+&#x20;   icon: '🦙',
+
+&#x20;   capabilities: \['local', 'private', 'offline'],
+
+&#x20;   description: 'Run open-source models locally on your machine.',
+
+&#x20;   translationHint: 'Local model. Limited reasoning compared to frontier models. Use simpler, more direct prompts. No internet/filesystem unless tools added.',
+
+&#x20;   keyDashboardUrl: 'http://localhost:11434',
+
+&#x20;   requiresKey: false,
+
+&#x20; },
+
+&#x20; 'custom': {
+
+&#x20;   id: 'custom',
+
+&#x20;   name: 'Custom',
+
+&#x20;   icon: '⚙️',
+
+&#x20;   capabilities: \[],
+
+&#x20;   description: 'User-defined agent.',
+
+&#x20;   translationHint: 'User-defined.',
+
+&#x20;   keyDashboardUrl: null,
+
+&#x20;   requiresKey: false,
+
+&#x20; },
+
+} as const;
+
+```
+
+
+
+\---
+
+
+
+\## 13. Stripe Billing
+
+
+
+\### 13.1 Products \& Prices
+
+
+
+(See Section 2.1 for the canonical Stripe product/price table.)
+
+
+
+Both prices belong to the same Product so users can switch between cycles via Customer Portal.
+
+
+
+\### 13.2 Upgrade Flow
+
+
+
+1\. User clicks "Upgrade to Pro" anywhere in the app (settings, paywall modal, marketing page)
+
+2\. Server creates a Stripe Checkout Session with the user's Stripe customer ID (creates one if needed)
+
+3\. Redirect to Stripe Checkout
+
+4\. User completes payment
+
+5\. Stripe redirects to `/settings/subscription?success=true`
+
+6\. Webhook receives `checkout.session.completed` and `customer.subscription.created` → updates `User.subscriptionTier = 'pro'`
+
+
+
+\### 13.3 Webhook Handler (`/api/stripe/webhook`)
+
+
+
+Handle these events:
+
+
+
+| Event | Action |
+
+|---|---|
+
+| `checkout.session.completed` | Mark user as Pro |
+
+| `customer.subscription.updated` | Update tier and period end |
+
+| `customer.subscription.deleted` | Downgrade to Free |
+
+| `invoice.payment\_failed` | Mark `subscriptionStatus = 'past\_due'` + send email |
+
+| `invoice.payment\_succeeded` | No-op (already handled) |
+
+
+
+\### 13.4 Downgrade Flow
+
+
+
+\- User cancels via Customer Portal
+
+\- Stripe sets `cancel\_at\_period\_end = true`
+
+\- We keep them on Pro until `subscriptionPeriodEnd`
+
+\- Cron job or webhook on `customer.subscription.deleted` sets tier to Free
+
+\- Their data is preserved; over-limit features (extra prompts, etc.) become read-only with upgrade prompt
+
+
+
+\### 13.5 Free Tier Enforcement
+
+
+
+| Limit | Where Enforced |
+
+|---|---|
+
+| 25 prompts | Server-side on prompt CREATE; client-side warning before |
+
+| 3 groups | Server-side on group CREATE |
+
+| 5 AI Improve / month | Server-side on AI route |
+
+| 5 AI Generate / month | Server-side on AI route |
+
+| 5 vault keys | Server-side on key CREATE |
+
+
+
+When a Free user hits a limit, the API returns 402 with a structured error:
+
+
+
+```json
+
+{
+
+&#x20; "error": "limit\_exceeded",
+
+&#x20; "limit": "prompts",
+
+&#x20; "current": 25,
+
+&#x20; "max": 25,
+
+&#x20; "upgradeUrl": "/settings/subscription"
+
+}
+
+```
+
+
+
+The UI catches this and shows an upgrade modal.
+
+
+
+\---
+
+
+
+\## 14. Email (Resend)
+
+
+
+\### 14.1 Transactional Emails
+
+
+
+| Trigger | Subject | Template |
+
+|---|---|---|
+
+| Signup | Welcome to Stak | `welcome.tsx` |
+
+| Email verification | Verify your email | `verify.tsx` |
+
+| Forgot password | Reset your password | `reset-password.tsx` |
+
+| Subscription started | You're on Pro 🎉 | `subscription-started.tsx` |
+
+| Subscription canceled | Your Pro subscription will end on X | `subscription-canceled.tsx` |
+
+| Payment failed | Action required: payment failed | `payment-failed.tsx` |
+
+
+
+\### 14.2 Marketing Emails (V1.1)
+
+
+
+Deferred to V1.1. Have the toggle in settings, but no marketing campaigns at launch.
+
+
+
+\---
+
+
+
+\## 15. Analytics (PostHog)
+
+
+
+\### 15.1 Events to Track
+
+
+
+| Event | Properties |
+
+|---|---|
+
+| `signup` | provider, source |
+
+| `signin` | provider |
+
+| `prompt\_created` | groupId, agent, isAiGenerated |
+
+| `prompt\_edited` | promptId |
+
+| `prompt\_copied` | promptId, agent |
+
+| `prompt\_shared\_email` | promptId |
+
+| `prompt\_shared\_link` | promptId |
+
+| `share\_link\_viewed` | token |
+
+| `share\_link\_saved` | token |
+
+| `ai\_improve\_used` | model, success |
+
+| `ai\_generate\_used` | model, success |
+
+| `variant\_translated` | fromAgent, toAgent, success |
+
+| `vault\_setup\_completed` | (none) |
+
+| `vault\_key\_added` | provider |
+
+| `vault\_key\_tested` | provider, success |
+
+| `vault\_env\_built` | providerCount |
+
+| `upgrade\_started` | source |
+
+| `upgrade\_completed` | plan |
+
+| `downgrade\_completed` | (none) |
+
+| `limit\_hit` | limit\_type |
+
+
+
+\### 15.2 Privacy
+
+
+
+\- Disable session recording for `/vault/\*` routes
+
+\- Mask all input fields by default (PostHog's default behavior)
+
+\- Never capture: passwords, API keys, prompt template contents, master password
+
+\- User can opt out in Settings → Privacy
+
+
+
+\---
+
+
+
+\## 16. Error Handling (Sentry)
+
+
+
+\- Capture all unhandled exceptions
+
+\- Capture API route errors with user ID context (but never request bodies)
+
+\- Specifically scrub: `password`, `apiKey`, `key`, `token`, `secret`, `template` from breadcrumbs and contexts
+
+\- Per-route error boundaries in Next.js
+
+\- User-facing error pages that don't leak stack traces
+
+
+
+\---
+
+
+
+\## 17. Performance Budgets
+
+
+
+| Metric | Target |
+
+|---|---|
+
+| Largest Contentful Paint (LCP) | < 2.0s on 4G |
+
+| First Input Delay (FID) | < 100ms |
+
+| Cumulative Layout Shift (CLS) | < 0.1 |
+
+| Time to Interactive | < 3.0s |
+
+| Library page render with 100 prompts | < 200ms |
+
+| Search debounce | 200ms |
+
+| API route p95 | < 500ms (excluding AI calls) |
+
+| AI Improve roundtrip | < 8s |
+
+
+
+\---
+
+
+
+\## 18. Accessibility
+
+
+
+V1 minimum bar:
+
+
+
+\- All interactive elements keyboard navigable
+
+\- Focus indicators visible
+
+\- ARIA labels on icon-only buttons
+
+\- Color contrast WCAG AA minimum
+
+\- Form errors announced to screen readers
+
+\- Modals trap focus and restore on close
+
+\- Skip-to-content link on every page
+
+
+
+V1.1: full WCAG AA audit and remediation.
+
+
+
+\---
+
+
+
+\## 19. Testing Strategy
+
+
+
+\### 19.1 Unit Tests (Vitest)
+
+
+
+Cover:
+
+\- Crypto utilities (encrypt, decrypt, key derivation)
+
+\- Provider auto-detection
+
+\- Free-tier limit checks
+
+\- Placeholder substitution
+
+\- Agent profile lookups
+
+\- Stripe webhook handlers (mocked Stripe)
+
+
+
+\### 19.2 E2E Tests (Playwright)
+
+
+
+Critical user journeys:
+
+1\. Signup → verify email → land on library
+
+2\. Create prompt → edit → save
+
+3\. Generate AI prompt → review → save
+
+4\. Set up vault → add key → test → copy
+
+5\. Build .env from vault → copy
+
+6\. Share prompt → recipient saves
+
+7\. Upgrade to Pro via Stripe (test mode)
+
+8\. Sign in on second device → see synced data
+
+
+
+\### 19.3 Manual Testing Checklist
+
+
+
+Pre-launch checklist documented in `/tests/manual-checklist.md`:
+
+\- All 9 settings pages
+
+\- All 6 themes
+
+\- All 3 layout modes
+
+\- All 73 seed prompts render
+
+\- All 11 vault providers
+
+\- Mobile responsive on iPhone SE, iPhone 15 Pro Max, iPad
+
+
+
+\---
+
+
+
+\## 20. Deployment
+
+
+
+\### 20.1 Environments
+
+
+
+| Env | URL | Purpose |
+
+|---|---|---|
+
+| Local | localhost:3000 | Dev |
+
+| Preview | stak-pr-N.vercel.app | Per-PR previews |
+
+| Staging | (Vercel preview URL until final brand) | Pre-prod |
+
+| Production | (final domain TBD post-naming research) | Live |
+
+
+
+\### 20.2 Environment Variables
+
+
+
+```
+
+\# Auth \& DB
+
+DATABASE\_URL=
+
+DIRECT\_URL=
+
+NEXT\_PUBLIC\_SUPABASE\_URL=
+
+NEXT\_PUBLIC\_SUPABASE\_ANON\_KEY=
+
+SUPABASE\_SERVICE\_ROLE\_KEY=
+
+
+
+\# Stripe
+
+STRIPE\_SECRET\_KEY=
+
+STRIPE\_WEBHOOK\_SECRET=
+
+NEXT\_PUBLIC\_STRIPE\_PRICE\_MONTHLY=
+
+NEXT\_PUBLIC\_STRIPE\_PRICE\_YEARLY=
+
+
+
+\# AI
+
+ANTHROPIC\_API\_KEY=
+
+OPENAI\_API\_KEY=
+
+
+
+\# Email
+
+RESEND\_API\_KEY=
+
+EMAIL\_FROM=
+
+
+
+\# Analytics
+
+NEXT\_PUBLIC\_POSTHOG\_KEY=
+
+NEXT\_PUBLIC\_POSTHOG\_HOST=
+
+
+
+\# Errors
+
+SENTRY\_DSN=
+
+SENTRY\_AUTH\_TOKEN=
+
+
+
+\# App
+
+NEXT\_PUBLIC\_APP\_URL=
+
+NODE\_ENV=
+
+```
+
+
+
+\### 20.3 CI/CD (GitHub Actions)
+
+
+
+Workflow on push to `main`:
+
+1\. Lint
+
+2\. Typecheck
+
+3\. Unit tests
+
+4\. Build
+
+5\. E2E tests against preview
+
+6\. Deploy to Vercel
+
+
+
+\### 20.4 Domain \& DNS
+
+
+
+\- Final domain pending naming research (see Section 23.1)
+
+\- During build: use a Vercel-provided preview domain (`stak-build.vercel.app` or similar) for staging
+
+\- HTTPS via Vercel (automatic)
+
+\- Once final name is locked: register domain, update env vars, update all email/marketing copy
+
+\- `www` → apex redirect
+
+
+
+\---
+
+
+
+\## 21. Launch Plan
+
+
+
+\### 21.1 Pre-Launch (Days 1-12)
+
+
+
+\- Build per Section 22 plan
+
+\- Internal testing
+
+\- Closed beta with 10-20 invited users
+
+\- Polish based on feedback
+
+
+
+\### 21.2 Launch (Day 14)
+
+
+
+\- Twitter/X thread from your account
+
+\- Post on r/ChatGPT, r/Anthropic, r/LocalLLaMA, r/SaaS
+
+\- Submit to Product Hunt (schedule for a Tuesday)
+
+\- Submit to Hacker News (Show HN)
+
+\- Email 50 hand-picked early users from your network
+
+
+
+\### 21.3 Week 1 Post-Launch
+
+
+
+\- Daily monitoring of Sentry, PostHog, Stripe
+
+\- Respond to all support emails within 24h
+
+\- Push 1-2 small fixes per day based on real user feedback
+
+\- Don't add features yet — fix issues
+
+
+
+\### 21.4 Month 1 Post-Launch
+
+
+
+\- Plan V1.1 based on top user requests
+
+\- Share metrics openly on Twitter (transparency builds trust)
+
+\- Build the public changelog page
+
+\- Start the security blog post series
+
+
+
+\---
+
+
+
+\## 22. Build Plan (Parallel Agent Orchestration)
+
+
+
+\### 22.1 Agent Allocation
+
+
+
+Three Claude Code agents working in parallel on isolated areas:
+
+
+
+\*\*Agent A — Backend \& Auth\*\*
+
+\- Database schema (Prisma)
+
+\- Migrations
+
+\- Supabase setup
+
+\- Auth flow + middleware
+
+\- Seed prompts loader
+
+\- API routes for prompts/groups CRUD
+
+\- Stripe webhook handler
+
+
+
+\*\*Agent B — Frontend Core\*\*
+
+\- Marketing site (landing, pricing, security, resources)
+
+\- Auth pages (signin, signup, forgot)
+
+\- Library page + 3 layout modes
+
+\- Detail page + Edit modal
+
+\- Settings shell + 9 categories
+
+
+
+\*\*Agent C — Vault \& AI\*\*
+
+\- Vault encryption library (`lib/crypto/vault.ts`)
+
+\- Vault page + setup flow + key management UI
+
+\- Build .env modal
+
+\- AI Improve / Generate / Translate API routes
+
+\- AI feature UX integration
+
+
+
+\### 22.2 Build Sequence
 
 
 
@@ -686,131 +3010,51 @@ Once you confirm Day N is integrated and working, paste the merged status here. 
 
 |---|---|---|---|
 
-| 1 | Repo scaffold, Prisma schema, Supabase clients, auth pages | Marketing site (landing) + design system | Crypto library + agent profiles + unit tests |
+| 1 | Repo setup, Prisma schema, Supabase project | Repo setup, Tailwind, shadcn install, design tokens | (waits) |
 
-| 2 | Auth middleware, signup/signin API routes complete, email verification | Pricing + Security + Resources marketing pages | Vault setup flow page (master password setup) |
+| 2 | Auth middleware, signup/signin API | Marketing site (landing + pricing + security) | Crypto library, unit tests |
 
-| 3 | Prompts CRUD API, seed loader (73 seeded prompts) | Auth pages styling, app shell, library page (detailed mode) | Vault page (provider cards, add key flow) |
+| 3 | Prompts CRUD API, seed loader | Auth pages, app shell, settings shell | Vault setup flow |
 
-| 4 | Groups CRUD, share links API | Library compact + list modes | Test connection per provider |
+| 4 | Groups CRUD, share links API | Library page (detailed + compact + list) | Vault page (provider cards, add key) |
 
-| 5 | Stripe Checkout endpoint + webhook handler | Detail page + Edit modal | Lock toggle + key copy with confirmation |
+| 5 | Stripe Checkout + webhook | Detail page + Edit modal | Test connection + lock toggle |
 
-| 6 | Subscription enforcement middleware (free tier limits) | All 9 settings pages | Build .env modal + presets |
+| 6 | Subscription enforcement middleware | All 9 settings pages | Build .env modal |
 
-| 7 | Integration testing | Variant tabs UX | AI Improve API route + UI integration |
+| 7 | (joins B and C for integration) | Variant tabs + UX | AI Improve route + UI |
 
-| 8 | Bug fixes, perf | Mobile responsive pass | AI Generate API + Translate Variant API |
+| 8 | Integration testing | Mobile responsive pass | AI Generate + Translate routes |
 
-| 9 | Performance pass | Polish, animations, loading states | Vault cloud sync (Pro) |
+| 9 | Performance pass | Polish, animations | Vault cloud sync (Pro) |
 
-| 10 | E2E tests with Playwright | E2E tests | E2E tests |
+| 10 | E2E tests | E2E tests | E2E tests |
 
 | 11 | Bug fixes | Bug fixes | Bug fixes |
 
-| 12 | Security review (auth flows) | Accessibility audit (WCAG AA) | Security review (vault encryption) |
+| 12 | Security review | Accessibility audit | Security review |
 
-| 13 | Closed beta with 10-20 invited users | Closed beta | Closed beta |
+| 13 | Closed beta | Closed beta | Closed beta |
 
 | 14 | Public launch | Public launch | Public launch |
 
 
 
-\---
+\### 22.3 Orchestrator Responsibilities (Bill)
 
 
 
-\## Communication Protocol
+\- Lock spec (this document) — done
 
+\- Provision: Supabase project, Stripe account, Resend account, PostHog account, Sentry project, Vercel project, domain
 
+\- Daily standup with each agent (15 min) — review progress, unblock, integrate
 
-\### When an agent should STOP and ask Bill (not improvise)
+\- Code review on PRs before merge
 
+\- Final QA pass before launch
 
-
-\- Touching a file outside their ownership map
-
-\- Installing a dependency not listed in their day's mission
-
-\- Discovering a spec ambiguity
-
-\- A test failing they can't debug in 15 minutes
-
-\- Anything that would require a database schema change
-
-\- Anything that would block another agent
-
-
-
-\### When an agent should just proceed
-
-
-
-\- Bug in their own code
-
-\- Refactoring within their own files
-
-\- Improving error messages
-
-\- Writing additional tests beyond what was asked
-
-\- Improving code quality (so long as the public API/contract is unchanged)
-
-
-
-\### Standard daily report format (each agent should follow this)
-
-
-
-```
-
-\## Agent \[A/B/C] — Day \[N] Report
-
-
-
-\### Built
-
-\- bullet list of what was completed
-
-
-
-\### Tested
-
-\- what was tested and how
-
-\- test results (pass/fail counts)
-
-
-
-\### Blockers
-
-\- anything stopping progress, with specifics
-
-
-
-\### Dependencies installed
-
-\- exact list with versions
-
-
-
-\### Files touched
-
-\- list of files created/modified
-
-
-
-\### PR link
-
-\- branch name and PR URL
-
-
-
-\### Spec questions / ambiguities
-
-\- anything in SPEC.md that was unclear
-
-```
+\- Drive marketing prep (landing copy polish, social assets, launch posts)
 
 
 
@@ -818,75 +3062,51 @@ Once you confirm Day N is integrated and working, paste the merged status here. 
 
 
 
-\## Bill's Orchestrator Tasks (Each Day)
+\## 23. Open Decisions / Risks
 
 
 
-| Time | Task |
-
-|---|---|
-
-| Morning | Review yesterday's reports (paste into this conversation) |
-
-| Morning | Receive Day-N prompts from me, paste to each agent |
-
-| Throughout day | Monitor PRs, ping agents if stuck |
-
-| End of day | Review final reports from each agent |
-
-| End of day | Merge PRs in correct order |
-
-| End of day | Verify staging deploy works |
-
-| End of day | Brief end-of-day status here for Day N+1 prompts |
+\### 23.1 Open Decisions (Bill to confirm before launch)
 
 
 
-\---
+\- \[ ] \*\*Final brand name + domain\*\* — naming research running in parallel during build week. Codename "Stak" used throughout this spec; before public launch, do a global find-and-replace once final brand is locked.
+
+&#x20; - Note: "PromptDesk" was rejected as a codename mid-spec because an existing open-source product at github.com/promptdesk/promptdesk already uses the name in the same category. "Stak" was chosen as a neutral working codename.
+
+&#x20; - Recommended path: Squadhelp brief ($199-499) for 50+ professionally-screened name candidates with available `.com` domains and trademark checks, OR Atom.com / Brandbucket for pre-vetted available premium domains
+
+&#x20; - Naming brief should specify: short (≤10 chars), brandable, available `.com` or strong `.app`, no AI prompt-tool collisions, available Twitter/X handle
+
+\- \[ ] Logo design: commission once name is locked
+
+\- \[ ] Twitter handle: confirm once name is locked
+
+\- \[ ] Support email: `support@<finaldomain>`
+
+\- \[ ] Privacy policy and Terms of Service: use a generated baseline (Termly/iubenda) or have a lawyer review
 
 
 
-\## When Things Go Wrong
+\### 23.2 Risks
 
 
 
-\### Scenario: Agent gets stuck on a problem
+| Risk | Likelihood | Mitigation |
 
+|---|---|---|
 
+| Master password recovery requests | High | Clear UX language, repeat warnings, hint feature |
 
-→ Paste their error/output here. I'll diagnose and either give them a corrected prompt, or tell you to redirect them to a different task while another agent unblocks them.
+| Vault breach perception | Medium | Security page, public audit, bug bounty when scaled |
 
+| Anthropic API outage | Medium | Graceful degradation, error messages, OpenAI fallback (V1.1) |
 
+| Stripe edge cases (failed payments, disputes) | Medium | Robust webhook handling, customer service playbook |
 
-\### Scenario: Two agents have conflicting changes
+| Free tier abuse (account farming) | Low | Email verification required, monitor signups for patterns |
 
-
-
-→ Almost shouldn't happen with the ownership map. If it does, paste both PRs here. I'll arbitrate based on the spec.
-
-
-
-\### Scenario: Spec has a real gap
-
-
-
-→ Paste the specific question. I'll update the SPEC.md (versioned in section 23) and rebroadcast to all three agents.
-
-
-
-\### Scenario: An agent goes off-script and starts building features not in their day's mission
-
-
-
-→ Stop them immediately. Have them revert. Paste their explanation here, I'll generate a corrected prompt.
-
-
-
-\### Scenario: Everything's on fire
-
-
-
-→ Pause all agents. Paste everything here. We regroup.
+| Slow launch traction | Medium | Multi-channel launch (HN, PH, Twitter, Reddit), build in public |
 
 
 
@@ -894,27 +3114,25 @@ Once you confirm Day N is integrated and working, paste the merged status here. 
 
 
 
-\## Final Pre-Flight Checklist
+\## 24. Glossary
 
 
 
-Before pasting the three Day-1 prompts, confirm:
+\- \*\*Prompt\*\* — A reusable AI instruction with a template, placeholders, and metadata
 
+\- \*\*Group\*\* — A collection of related prompts (e.g., "File Organization")
 
+\- \*\*Variant\*\* — An agent-specific version of a prompt
 
-\- \[ ] Spec saved as `docs/SPEC.md` in repo
+\- \*\*Vault\*\* — Encrypted storage for API keys
 
-\- \[ ] All 9 external accounts created (GitHub, Vercel, Supabase, Stripe, Resend, PostHog, Sentry, Anthropic, OpenAI)
+\- \*\*Master Password\*\* — User's password for the vault (separate from account password)
 
-\- \[ ] All env values saved in `\~/.promptdesk-secrets.env` (NOT in repo)
+\- \*\*Provider\*\* — An AI service that issues API keys (Anthropic, OpenAI, etc.)
 
-\- \[ ] Local repo created and pushed to GitHub
+\- \*\*Agent\*\* — An AI tool/app where prompts are used (Claude Desktop, ChatGPT, etc.)
 
-\- \[ ] Branch protection on `main` (require PR before merge)
-
-\- \[ ] Three Claude Code sessions ready, each in `\~/code/promptdesk`
-
-\- \[ ] You have \~4-6 hours blocked off for Day 1 supervision
+\- \*\*Seed Prompt\*\* — Pre-loaded prompt available to every new user
 
 
 
@@ -922,25 +3140,27 @@ Before pasting the three Day-1 prompts, confirm:
 
 
 
-\## Begin
+\## 25. Sign-Off
 
 
 
-When ready:
+This specification is the locked V1 plan for Stak. All decisions above are committed unless explicitly versioned and updated in this document.
 
 
 
-1\. Paste Agent A's Day 1 prompt into Session 1
+| Role | Name | Sign-off |
 
-2\. Paste Agent C's Day 1 prompt into Session 3 (can start in parallel with A — independent work)
+|---|---|---|
 
-3\. Wait for Agent A's PR to merge, then paste Agent B's Day 1 prompt into Session 2
+| Product Owner | Bill Asmar | ✓ (yes-to-all) |
 
-
-
-Then come back here and paste each agent's Day 1 report when done.
+| Build Orchestrator | Claude (Anthropic) | ✓ |
 
 
 
-Let's ship.
+\---
+
+
+
+\*\*End of specification. Begin build.\*\*
 
