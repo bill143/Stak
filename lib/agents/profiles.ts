@@ -1,170 +1,96 @@
-/**
- * Agent profiles for Stak.
- *
- * NOTE TO BILL: The agent-c kickoff prompt referenced "Section 12.1 of SPEC.md"
- * for the canonical 8 agent profiles, but the docs/SPEC.md committed to this
- * worktree contains only the three-agent orchestration plan — the V1 master
- * build specification (with Section 12.1) is not present. The profiles below
- * are best-effort placeholders that match a plausible shape for the product.
- * Replace this file wholesale once the master spec lands.
- */
+export const AGENTS = {
+  'claude-desktop': {
+    id: 'claude-desktop',
+    name: 'Claude Desktop',
+    icon: '🖥️',
+    capabilities: ['filesystem', 'terminal', 'mcp'],
+    description: "Anthropic's desktop client with Desktop Commander MCP for file operations.",
+    translationHint: 'Has direct filesystem access via Desktop Commander. Can read, write, delete files and run shell commands. Use specific file paths.',
+    keyDashboardUrl: 'https://console.anthropic.com/settings/keys',
+    requiresKey: true,
+    keyProvider: 'anthropic',
+  },
+  'claude-code': {
+    id: 'claude-code',
+    name: 'Claude Code',
+    icon: '💻',
+    capabilities: ['filesystem', 'terminal', 'git', 'autonomous-execution'],
+    description: "Anthropic's agentic coding CLI for autonomous development.",
+    translationHint: 'Operates autonomously in a code repository. Can edit files, run commands, commit changes. Best for multi-step development tasks.',
+    keyDashboardUrl: 'https://console.anthropic.com/settings/keys',
+    requiresKey: true,
+    keyProvider: 'anthropic',
+  },
+  'claude-web': {
+    id: 'claude-web',
+    name: 'Claude.ai',
+    icon: '🌐',
+    capabilities: ['web-search', 'artifacts', 'projects'],
+    description: "Anthropic's web client. No filesystem access by default.",
+    translationHint: 'No filesystem access. User pastes content into the chat. Best for analysis, writing, conversation.',
+    keyDashboardUrl: null,
+    requiresKey: false,
+  },
+  'chatgpt': {
+    id: 'chatgpt',
+    name: 'ChatGPT',
+    icon: '🤖',
+    capabilities: ['web-browsing', 'code-interpreter', 'image-generation'],
+    description: "OpenAI's ChatGPT. No filesystem access by default; Code Interpreter handles uploads.",
+    translationHint: 'No persistent filesystem. Code Interpreter can run Python on uploaded files. Use natural language and provide context.',
+    keyDashboardUrl: 'https://platform.openai.com/api-keys',
+    requiresKey: true,
+    keyProvider: 'openai',
+  },
+  'cursor': {
+    id: 'cursor',
+    name: 'Cursor',
+    icon: '✏️',
+    capabilities: ['filesystem', 'codebase-context', 'inline-edit'],
+    description: 'AI-first code editor.',
+    translationHint: 'Built into the editor. Has full codebase context. Best for code-focused prompts and rules-style instructions.',
+    keyDashboardUrl: null,
+    requiresKey: false,
+  },
+  'windsurf': {
+    id: 'windsurf',
+    name: 'Windsurf',
+    icon: '🌊',
+    capabilities: ['filesystem', 'codebase-context', 'agentic'],
+    description: "Codeium's agentic AI IDE.",
+    translationHint: 'Similar to Cursor. Agentic flows. Codebase-aware.',
+    keyDashboardUrl: null,
+    requiresKey: false,
+  },
+  'ollama': {
+    id: 'ollama',
+    name: 'Ollama',
+    icon: '🦙',
+    capabilities: ['local', 'private', 'offline'],
+    description: 'Run open-source models locally on your machine.',
+    translationHint: 'Local model. Limited reasoning compared to frontier models. Use simpler, more direct prompts. No internet/filesystem unless tools added.',
+    keyDashboardUrl: 'http://localhost:11434',
+    requiresKey: false,
+  },
+  'custom': {
+    id: 'custom',
+    name: 'Custom',
+    icon: '⚙️',
+    capabilities: [],
+    description: 'User-defined agent.',
+    translationHint: 'User-defined.',
+    keyDashboardUrl: null,
+    requiresKey: false,
+  },
+} as const;
 
-export type AgentProfileId =
-  | 'general'
-  | 'coder'
-  | 'writer'
-  | 'researcher'
-  | 'strategist'
-  | 'editor'
-  | 'brainstormer'
-  | 'translator';
+export type AgentId = keyof typeof AGENTS;
+export type AgentProfile = (typeof AGENTS)[AgentId];
 
-export type AgentProvider = 'anthropic' | 'openai';
-
-export interface AgentProfile {
-  id: AgentProfileId;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  provider: AgentProvider;
-  defaultModel: string;
-  temperature: number;
-  systemPrompt: string;
+export function getAgent(id: AgentId): AgentProfile {
+  return AGENTS[id];
 }
 
-export const AGENT_PROFILES: readonly AgentProfile[] = [
-  {
-    id: 'general',
-    name: 'General Assistant',
-    description: 'Balanced, helpful default for everyday prompts.',
-    icon: 'sparkles',
-    color: '#3B82F6',
-    provider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
-    temperature: 0.7,
-    systemPrompt:
-      'You are a helpful, accurate, concise general-purpose assistant. ' +
-      'Answer the user directly. Ask a clarifying question only when the ' +
-      'request is genuinely ambiguous.',
-  },
-  {
-    id: 'coder',
-    name: 'Coder',
-    description: 'Software engineering: code generation, refactors, reviews.',
-    icon: 'code',
-    color: '#10B981',
-    provider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
-    temperature: 0.2,
-    systemPrompt:
-      'You are an expert software engineer. Produce correct, idiomatic, ' +
-      'production-quality code. Prefer simple solutions over clever ones. ' +
-      'When asked for changes, return only the relevant diff or file. ' +
-      'Call out tradeoffs and edge cases that matter; skip those that do not.',
-  },
-  {
-    id: 'writer',
-    name: 'Writer',
-    description: 'Long-form prose: articles, essays, marketing copy.',
-    icon: 'pen-tool',
-    color: '#F59E0B',
-    provider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
-    temperature: 0.8,
-    systemPrompt:
-      'You are a skilled writer. Match the requested voice and audience. ' +
-      'Write with rhythm and specificity — concrete nouns, active verbs, ' +
-      'no filler. Avoid clichés and corporate jargon unless the user asks ' +
-      'for them.',
-  },
-  {
-    id: 'researcher',
-    name: 'Researcher',
-    description: 'Investigation, synthesis, sourcing, structured analysis.',
-    icon: 'search',
-    color: '#8B5CF6',
-    provider: 'anthropic',
-    defaultModel: 'claude-opus-4-7',
-    temperature: 0.3,
-    systemPrompt:
-      'You are a meticulous researcher. Decompose questions into the ' +
-      'sub-questions that actually need answering. Cite sources when you ' +
-      'have them. Distinguish established fact from interpretation, and ' +
-      'flag uncertainty explicitly.',
-  },
-  {
-    id: 'strategist',
-    name: 'Strategist',
-    description: 'Business, product, and marketing strategy.',
-    icon: 'target',
-    color: '#EF4444',
-    provider: 'anthropic',
-    defaultModel: 'claude-opus-4-7',
-    temperature: 0.6,
-    systemPrompt:
-      'You are a sharp business strategist. Reason from first principles, ' +
-      'not buzzwords. Identify the actual decision the user is making, the ' +
-      'options on the table, and the most consequential tradeoffs. Push ' +
-      'back when the framing is wrong.',
-  },
-  {
-    id: 'editor',
-    name: 'Editor',
-    description: 'Critique, sharpen, and tighten existing prompts or text.',
-    icon: 'scissors',
-    color: '#EC4899',
-    provider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
-    temperature: 0.4,
-    systemPrompt:
-      'You are an exacting editor. Improve clarity, concision, and ' +
-      'precision without changing the author\'s voice. Cut anything that ' +
-      'does not earn its place. When you change meaning, say so.',
-  },
-  {
-    id: 'brainstormer',
-    name: 'Brainstormer',
-    description: 'Divergent ideation: angles, options, variations.',
-    icon: 'lightbulb',
-    color: '#FACC15',
-    provider: 'openai',
-    defaultModel: 'gpt-4o',
-    temperature: 1.0,
-    systemPrompt:
-      'You are a generative brainstorming partner. Produce many genuinely ' +
-      'distinct options before converging. Mix safe, unconventional, and ' +
-      'wild ideas. Label each so the user can pick a lane.',
-  },
-  {
-    id: 'translator',
-    name: 'Translator',
-    description: 'Convert between languages, formats, and prompt variants.',
-    icon: 'languages',
-    color: '#06B6D4',
-    provider: 'openai',
-    defaultModel: 'gpt-4o',
-    temperature: 0.2,
-    systemPrompt:
-      'You are a precise translator and format converter. Preserve ' +
-      'meaning, tone, and structure. When idioms do not map directly, ' +
-      'choose the closest natural equivalent and note the substitution. ' +
-      'Output only the converted result unless asked for commentary.',
-  },
-] as const;
-
-const PROFILE_BY_ID: Map<AgentProfileId, AgentProfile> = new Map(
-  AGENT_PROFILES.map((p) => [p.id, p]),
-);
-
-export function getAgentProfile(id: AgentProfileId): AgentProfile {
-  const profile = PROFILE_BY_ID.get(id);
-  if (!profile) {
-    throw new Error(`Unknown agent profile: ${id}`);
-  }
-  return profile;
-}
-
-export function listAgentProfiles(): readonly AgentProfile[] {
-  return AGENT_PROFILES;
+export function listAgents(): readonly AgentProfile[] {
+  return Object.values(AGENTS);
 }
